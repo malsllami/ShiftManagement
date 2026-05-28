@@ -72,7 +72,7 @@ async function submitEmployeeModal() {
     res = await API.updateEmployee(m.dataset.targetId, data);
   }
 
-  btn.disabled = false; btn.classList.remove('loading');
+  unlockButton(btn);
 
   if (res.success) {
     showToast(res.message, 'success');
@@ -111,7 +111,7 @@ async function submitTransferModal() {
 
   lockButton(btn, 5000);
   const res = await API.transferEmployee(targetId, newShift, notes);
-  btn.disabled = false; btn.classList.remove('loading');
+  unlockButton(btn);
 
   if (res.success) {
     showToast(res.message, 'success');
@@ -147,7 +147,7 @@ async function submitRoleModal() {
 
   lockButton(btn, 5000);
   const res = await API.changeEmployeeRole(targetId, newRole, newCode);
-  btn.disabled = false; btn.classList.remove('loading');
+  unlockButton(btn);
 
   if (res.success) {
     showToast(res.message, 'success');
@@ -185,7 +185,7 @@ async function submitRegionModal() {
     center:    document.getElementById('regionCenter').value.trim(),
     carNumber: document.getElementById('regionCar').value.trim()
   });
-  btn.disabled = false; btn.classList.remove('loading');
+  unlockButton(btn);
 
   if (res.success) {
     showToast(res.message, 'success');
@@ -231,7 +231,7 @@ async function submitEquipmentModal() {
     major:      document.getElementById('eqMajor').value,
     otherQty:   document.getElementById('eqOther').value
   });
-  btn.disabled = false; btn.classList.remove('loading');
+  unlockButton(btn);
 
   if (res.success) { showToast(res.message,'success'); closeModal('equipmentModal'); await EquipmentPage.load(); }
   else showToast(res.message,'error');
@@ -316,7 +316,7 @@ async function submitLeaveRequest() {
 
   lockButton(btn, 8000);
   const res = await API.submitLeaveRequest({ employeeId, leaveType, startDate, endDate, notes });
-  btn.disabled = false; btn.classList.remove('loading');
+  unlockButton(btn);
 
   if (res.success) {
     showToast(res.message, res.balanceWarning ? 'warning' : 'success');
@@ -364,7 +364,7 @@ async function submitOvertimeForm() {
     employeeId: Auth.getEmployeeId(),
     date, hours: parseFloat(hours), reason
   });
-  btn.disabled = false; btn.classList.remove('loading');
+  unlockButton(btn);
 
   if (res.success) {
     showToast(res.message, 'success');
@@ -380,6 +380,17 @@ async function submitOvertimeForm() {
 // ================================================================
 async function openEmployeeProfileModal() {
   await openEditEmployeeModal(Auth.getEmployeeId());
+  // الرقم الوظيفي دائماً غير قابل للتعديل للموظف العادي
+  const idField = document.getElementById('empModalId');
+  if (idField) idField.disabled = true;
+  // إخفاء حقول الصلاحية من نموذج الموظف العادي
+  const role = Auth.getActiveRole();
+  if (role === ROLES.EMPLOYEE) {
+    ['empModalRole','empModalRoleCode','empModalStatus'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.closest('.form-group')?.classList.add('hidden');
+    });
+  }
 }
 
 // ================================================================
@@ -414,7 +425,7 @@ async function submitLeaveBalanceModal() {
     scheduledBalance: schBalance,
     isFirstEntry: true
   });
-  btn.disabled = false; btn.classList.remove('loading');
+  unlockButton(btn);
 
   if (res.success) { showToast(res.message, 'success'); closeModal('lbModal'); await LeavesPage.load(); }
   else showToast(res.message, 'error');
