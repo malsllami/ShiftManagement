@@ -862,28 +862,41 @@ body {
 }
 .btn:disabled { opacity: .6; cursor: not-allowed; transform: none !important; }
 
-/* ── زر تحميل دائري ── */
+/* ── زر تحميل دائري كامل ── */
 .btn.btn-spinning {
   border-radius: 50% !important;
   padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   overflow: hidden;
-  transition: border-radius .3s cubic-bezier(.4,0,.2,1),
-              width .3s cubic-bezier(.4,0,.2,1),
-              padding .3s cubic-bezier(.4,0,.2,1) !important;
 }
 .btn.btn-spinning .spin-ring {
   display: block;
-  width: 22px; height: 22px;
-  border: 3px solid rgba(255,255,255,.3);
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid rgba(255,255,255,.35);
   border-top-color: #fff;
   border-radius: 50%;
   animation: spin .65s linear infinite;
-  margin: auto;
 }
-/* للأزرار الـ outline */
-.btn-outline.btn-spinning .spin-ring {
-  border-color: rgba(21,101,192,.25);
+/* للأزرار الـ outline و ghost */
+.btn-outline.btn-spinning .spin-ring,
+.btn-ghost.btn-spinning   .spin-ring {
+  border-color: rgba(21,101,192,.2);
   border-top-color: var(--primary);
+}
+/* زر الدخول في بطاقة تسجيل الدخول */
+.btn-login.btn-spinning {
+  border-radius: 50% !important;
+  width: 48px !important;
+  height: 48px !important;
+  padding: 0 !important;
+}
+.btn-login.btn-spinning .spin-ring {
+  border-color: rgba(255,255,255,.3);
+  border-top-color: #fff;
 }
 
 .btn-primary {
