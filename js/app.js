@@ -207,7 +207,7 @@ function buildNavigation() {
     { id: 'equipment',     label: 'العدد والمقاسات',   icon: '🔧', elevated: false, roles: 'all' },
     { id: 'leaves',        label: 'الإجازات',          icon: '🌴', elevated: false, roles: 'all' },
     { id: 'overtime',      label: 'العمل الإضافي',     icon: '⏱️', elevated: false, roles: 'all' },
-    { id: 'overview',      label: 'العرض الشامل',      icon: '📊', elevated: true,  roles: ['تنسيق اداري','مدير'] },
+    { id: 'overview',      label: 'العرض الشامل',      icon: '📊', elevated: false, roles: 'all' },
     { id: 'notifications', label: 'الإشعارات',         icon: '🔔', elevated: false, roles: 'all' },
     { id: 'log',           label: 'السجل',             icon: '📋', elevated: true,  roles: ['تنسيق اداري','مدير'] },
     { id: 'settings',      label: 'الإعدادات',         icon: '⚙️', elevated: true,  roles: ['مدير'] },
@@ -311,8 +311,15 @@ function updateUserHeader() {
   const shift = Auth.getShift();
 
   document.getElementById('headerUserName').textContent = name;
-  document.getElementById('headerUserRole').textContent = `${role} - وردية ${shift}`;
+  document.getElementById('headerUserRole').textContent = `${role} | وردية ${shift}`;
   document.getElementById('headerUserAvatar').textContent = name.charAt(0) || '؟';
+}
+
+function updateHeaderStatus(icon, label, color) {
+  const el = document.getElementById('headerShiftStatus');
+  if (!el) return;
+  el.textContent = icon + ' ' + label;
+  el.style.color = color || 'rgba(255,255,255,.8)';
 }
 
 // ================================================================
