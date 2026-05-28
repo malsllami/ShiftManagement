@@ -80,17 +80,15 @@ async function handleLogin(e) {
     return;
   }
 
-  lockButton(btn, 5000);
-  showLoginLoading(true);
-
+  lockButton(btn, 8000);
   const res = await API.login(empId, password);
 
-  showLoginLoading(false);
-
   if (!res.success) {
-    showLoginError(res.message || 'خطأ في تسجيل الدخول');
+    // استعادة زر الدخول عند الخطأ
     btn.disabled = false;
-    btn.classList.remove('loading');
+    btn.style.cssText = '';
+    btn.innerHTML = '🔐 تسجيل الدخول';
+    showLoginError(res.message || 'خطأ في تسجيل الدخول');
     return;
   }
 
@@ -114,11 +112,6 @@ function showLoginError(msg) {
   const el = document.getElementById('loginError');
   el.textContent = msg;
   el.classList.add('show');
-}
-function showLoginLoading(show) {
-  const btn = document.getElementById('loginBtn');
-  if (show) btn.innerHTML = '<span class="spinner-sm" style="display:inline-flex;width:18px;height:18px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite;"></span>';
-  else btn.innerHTML = '<i>🔐</i> تسجيل الدخول';
 }
 
 // ================================================================
@@ -194,48 +187,60 @@ async function loadPageData(page) {
 // بناء القائمة حسب الصلاحية
 // ================================================================
 function buildNavigation() {
-  const nav   = document.getElementById('appNav');
-  const role  = Auth.getRole();
-  nav.innerHTML = '';
+  const nav          = document.getElementById('appNav');
+  const dbRole       = Auth.getRole();
+  const activeRole   = Auth.getActiveRole();
+  const isElevated   = Auth.hasElevatedAccess();
+  nav.innerHTML      = '';
 
-  const pages = [
-    { id: 'dashboard',     label: 'الرئيسية',         icon: '🏠', roles: 'all' },
-    { id: 'calendar',      label: 'تقويم الورديات',    icon: '📅', roles: 'all' },
-    { id: 'employees',     label: 'الموظفون',          icon: '👥', roles: ['مشرف وردية','تنسيق اداري','مدير'] },
-    { id: 'regions',       label: 'المناطق والمراكز',  icon: '📍', roles: 'all' },
-    { id: 'equipment',     label: 'العدد والمقاسات',   icon: '🔧', roles: 'all' },
-    { id: 'leaves',        label: 'الإجازات',          icon: '🌴', roles: 'all' },
-    { id: 'overtime',      label: 'العمل الإضافي',     icon: '⏱️', roles: 'all' },
-    { id: 'overview',      label: 'العرض الشامل',      icon: '📊', roles: ['تنسيق اداري','مدير'] },
-    { id: 'notifications', label: 'الإشعارات',         icon: '🔔', roles: 'all' },
-    { id: 'log',           label: 'السجل',             icon: '📋', roles: ['تنسيق اداري','مدير'] },
-    { id: 'settings',      label: 'الإعدادات',         icon: '⚙️',  roles: ['مدير'] },
+  // كل الصفحات المتاحة
+  const allPages = [
+    { id: 'dashboard',     label: 'الرئيسية',         icon: '🏠', elevated: false, roles: 'all' },
+    { id: 'calendar',      label: 'تقويم الورديات',    icon: '📅', elevated: false, roles: 'all' },
+    { id: 'employees',     label: 'الموظفون',          icon: '👥', elevated: true,  roles: ['مشرف وردية','تنسيق اداري','مدير'] },
+    { id: 'regions',       label: 'المناطق والمراكز',  icon: '📍', elevated: false, roles: 'all' },
+    { id: 'equipment',     label: 'العدد والمقاسات',   icon: '🔧', elevated: false, roles: 'all' },
+    { id: 'leaves',        label: 'الإجازات',          icon: '🌴', elevated: false, roles: 'all' },
+    { id: 'overtime',      label: 'العمل الإضافي',     icon: '⏱️', elevated: false, roles: 'all' },
+    { id: 'overview',      label: 'العرض الشامل',      icon: '📊', elevated: true,  roles: ['تنسيق اداري','مدير'] },
+    { id: 'notifications', label: 'الإشعارات',         icon: '🔔', elevated: false, roles: 'all' },
+    { id: 'log',           label: 'السجل',             icon: '📋', elevated: true,  roles: ['تنسيق اداري','مدير'] },
+    { id: 'settings',      label: 'الإعدادات',         icon: '⚙️', elevated: true,  roles: ['مدير'] },
   ];
 
-  pages.forEach(p => {
-    if (p.roles !== 'all' && !p.roles.includes(role)) return;
+  allPages.forEach(p => {
+    // تحقق من الصلاحية
+    if (p.roles !== 'all' && !p.roles.includes(dbRole)) return;
+
+    // الصفحات التي تحتاج صلاحية مرتفعة لا تُظهر إلا بعد إدخال الرمز
+    if (p.elevated && !isElevated) return;
+
     const el = document.createElement('div');
-    el.className = 'nav-item';
-    el.dataset.page = p.id;
-    el.innerHTML = `<span class="nav-icon">${p.icon}</span><span>${p.label}</span>`;
+    el.className     = 'nav-item';
+    el.dataset.page  = p.id;
+    el.innerHTML     = `<span class="nav-icon">${p.icon}</span><span>${p.label}</span>`;
     el.addEventListener('click', () => navigateTo(p.id));
     nav.appendChild(el);
   });
 
-  // زر الصلاحية المرتفعة
-  if (role !== ROLES.EMPLOYEE) {
+  // زر الصلاحية المرتفعة (يظهر فقط لمن لديه صلاحية أعلى من موظف)
+  if (dbRole !== ROLES.EMPLOYEE) {
+    const label = dbRole === ROLES.MANAGER ? 'المدير' :
+                  dbRole === ROLES.SUPERVISOR ? 'المشرف' : 'التنسيق';
     const elevatedBtn = document.createElement('button');
     elevatedBtn.id        = 'elevatedBtn';
-    elevatedBtn.className = 'elevated-badge';
-    elevatedBtn.innerHTML = `<span>🔑</span> <span>دخول ${role === ROLES.MANAGER ? 'المدير' : role === ROLES.SUPERVISOR ? 'المشرف' : 'التنسيق'}</span>`;
+    elevatedBtn.className = 'elevated-badge' + (isElevated ? ' active-elevated' : '');
+    elevatedBtn.innerHTML = isElevated
+      ? `<span class="elev-icon">🔓</span><span>وضع ${label} | رجوع</span>`
+      : `<span class="elev-icon">🔑</span><span>دخول ${label}</span>`;
     elevatedBtn.addEventListener('click', openElevatedCodeModal);
     nav.appendChild(elevatedBtn);
   }
 
-  // زر العودة لوضع الموظف
-  if (Auth.hasElevatedAccess()) {
-    markElevatedActive();
-  }
+  // تحديث النشط
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.page === AppState.currentPage);
+  });
 }
 
 // ================================================================
@@ -289,10 +294,7 @@ async function submitElevatedCode() {
 }
 
 function markElevatedActive() {
-  const btn = document.getElementById('elevatedBtn');
-  if (!btn) return;
-  btn.classList.add('active-elevated');
-  btn.innerHTML = `<span>✅</span><span>وضع ${Auth.getElevatedRole()} | رجوع لموظف</span>`;
+  buildNavigation(); // إعادة بناء بعد تفعيل الصلاحية
 }
 
 // ================================================================
@@ -319,7 +321,7 @@ async function handleLogout() {
 }
 
 // ================================================================
-// تغيير كلمة المرور
+// تغيير كلمة المرور (الإجباري في صفحة الدخول)
 // ================================================================
 async function handleChangePassword(forced = false) {
   const oldPass  = document.getElementById('oldPassInput').value.trim();
@@ -337,18 +339,18 @@ async function handleChangePassword(forced = false) {
   }
 
   const btn = document.getElementById('changePassBtn');
-  lockButton(btn, 5000);
+  lockButton(btn, 8000);
   const res = await API.changePassword(oldPass, newPass);
-  btn.disabled = false; btn.classList.remove('loading');
+  unlockButton(btn);
 
   if (res.success) {
-    showToast('تم تغيير كلمة المرور بنجاح', 'success');
+    showToast('تم تغيير كلمة المرور بنجاح ✅', 'success');
     if (forced) {
       hideChangePasswordPage();
       await initApp();
     } else {
-      document.getElementById('oldPassInput').value = '';
-      document.getElementById('newPassInput').value = '';
+      document.getElementById('oldPassInput').value  = '';
+      document.getElementById('newPassInput').value  = '';
       document.getElementById('confPassInput').value = '';
     }
   } else {
@@ -442,20 +444,42 @@ function createToastContainer() {
 // ================================================================
 // إظهار / إخفاء الصفحات
 // ================================================================
-function showLoginPage()         { document.getElementById('loginPage').classList.add('active'); }
-function hideLoginPage()         { document.getElementById('loginPage').classList.remove('active'); }
-function showLayout()            { document.getElementById('appLayout').classList.add('active'); }
-function showChangePasswordPage(forced) {
-  document.getElementById('changePassPage').classList.add('active');
-  document.getElementById('changePassTitle').textContent = forced
-    ? 'يجب تغيير كلمة المرور قبل المتابعة'
-    : 'تغيير كلمة المرور';
-  document.getElementById('changePassForcedNote').classList.toggle('hidden', !forced);
-  document.getElementById('changePassSkipBtn').classList.toggle('hidden', forced);
-  document.getElementById('changePassForcedObj') && (document.getElementById('changePassForcedObj').forced = forced);
+function showLoginPage() {
+  document.getElementById('loginPage').classList.add('active');
 }
+function hideLoginPage() {
+  document.getElementById('loginPage').classList.remove('active');
+}
+function showLayout() {
+  document.getElementById('appLayout').classList.add('active');
+}
+
+// تغيير كلمة المرور داخل بطاقة الدخول
+function showChangePasswordPage(forced) {
+  // إخفاء نموذج الدخول وإظهار نموذج المرور في نفس البطاقة
+  document.getElementById('loginFormSection').style.display  = 'none';
+  document.getElementById('changePassSection').style.display = 'block';
+
+  const note = document.getElementById('changePassForcedNote');
+  const skip = document.getElementById('changePassSkipBtn');
+  note.style.display = forced ? 'block' : 'none';
+  skip.classList.toggle('hidden', forced);
+
+  // تحديث العنوان
+  document.getElementById('loginCardTitle').textContent = forced
+    ? 'تغيير كلمة المرور' : 'تغيير كلمة المرور';
+  document.getElementById('loginCardSub').textContent   = forced
+    ? '⚠️ يجب تغيير المرور الافتراضية قبل المتابعة'
+    : 'السعودية للطاقة';
+
+  initPasswordToggles();
+}
+
 function hideChangePasswordPage() {
-  document.getElementById('changePassPage').classList.remove('active');
+  document.getElementById('loginFormSection').style.display  = 'block';
+  document.getElementById('changePassSection').style.display = 'none';
+  document.getElementById('loginCardTitle').textContent = 'إدارة الورديات';
+  document.getElementById('loginCardSub').textContent   = 'السعودية للطاقة';
 }
 
 // ================================================================
