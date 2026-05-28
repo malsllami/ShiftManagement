@@ -110,23 +110,33 @@ function debounce(fn, delay = 600) {
   };
 }
 
-// ── زر يتحول إلى دائرة عند التحميل ──
+// ── زر يتحول إلى دائرة كاملة عند التحميل ──
 function lockButton(btn, ms = 3500) {
   if (!btn || btn.disabled) return;
 
   btn.disabled = true;
   const savedHTML  = btn.innerHTML;
   const savedStyle = btn.getAttribute('style') || '';
-  const w          = btn.offsetWidth;
+  const rect       = btn.getBoundingClientRect();
+  const w          = Math.round(rect.width);
+  const h          = Math.round(rect.height);
+  const size       = 44; // قطر الدائرة
 
-  // ثبّت العرض ثم انتقل للدائرة
-  btn.style.cssText = `min-width:0;width:${w}px;overflow:hidden;transition:width .28s cubic-bezier(.4,0,.2,1),border-radius .28s cubic-bezier(.4,0,.2,1);`;
-  btn.innerHTML     = '';
+  // تثبيت الأبعاد الحالية كنقطة بداية للأنيميشن
+  btn.style.cssText =
+    `min-width:0 !important;` +
+    `width:${w}px;height:${h}px;` +
+    `overflow:hidden;` +
+    `transition:width .28s cubic-bezier(.4,0,.2,1),` +
+               `height .28s cubic-bezier(.4,0,.2,1),` +
+               `border-radius .28s cubic-bezier(.4,0,.2,1);`;
 
-  // جبر reflow
-  void btn.offsetWidth;
+  btn.innerHTML = '';
+  void btn.offsetWidth; // force reflow
 
-  btn.style.width        = '44px';
+  // التحول إلى دائرة
+  btn.style.width        = size + 'px';
+  btn.style.height       = size + 'px';
   btn.style.borderRadius = '50%';
   btn.classList.add('btn-spinning');
 
@@ -139,6 +149,8 @@ function lockButton(btn, ms = 3500) {
     btn.setAttribute('style', savedStyle);
     btn.classList.remove('btn-spinning');
     btn.innerHTML = savedHTML;
+    delete btn._restore;
+    delete btn._restoreTimer;
   };
 
   btn._restoreTimer = setTimeout(restore, ms);
