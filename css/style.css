@@ -67,6 +67,49 @@
   --border:  #BAE6FD;
 }
 
+/* ================================================================
+   حقل كلمة المرور مع زر الإظهار/الإخفاء
+   ================================================================ */
+.pass-field-wrapper {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+.pass-toggle-btn {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: color .15s, background .15s;
+  z-index: 3;
+  line-height: 1;
+}
+.pass-toggle-btn:hover { color: var(--primary); background: rgba(21,101,192,.1); }
+.pass-toggle-btn svg   { display: block; pointer-events: none; }
+
+/* حقول المرور العادية */
+.pass-field-wrapper .form-control { padding-left: 42px; }
+
+/* حقول المرور في صفحة الدخول */
+.pass-field-wrapper .login-input  { padding-left: 46px; }
+
+/* حقل الرمز الثانوي */
+.pass-field-wrapper .code-input   { padding-left: 46px; }
+
+/* لوحة الدخول: لون الأيقونة أبيض */
+.login-card .pass-toggle-btn       { color: rgba(255,255,255,.7); }
+.login-card .pass-toggle-btn:hover { color: #fff; background: rgba(255,255,255,.15); }
+.code-card  .pass-toggle-btn       { color: var(--text-muted); }
+
 /* ── Reset & Base ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
