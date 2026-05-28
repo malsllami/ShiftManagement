@@ -369,22 +369,46 @@ const OvertimePage = {
 // ================================================================
 const OverviewPage = {
   async load() {
-    const role = Auth.getActiveRole();
-    if (role !== ROLES.MANAGER && role !== ROLES.COORDINATOR) {
-      document.getElementById('page-overview').innerHTML = `<div class="empty-state"><div class="empty-state-icon">🔒</div><div class="empty-state-text">صلاحية خاصة</div></div>`;
+    const dbRole    = Auth.getRole();
+    const isElevated = Auth.hasElevatedAccess();
+    const container  = document.getElementById('page-overview');
+
+    // ── الموظف: بطاقة بياناته الشاملة (بدون صلاحية مرتفعة) ──
+    if (dbRole === ROLES.EMPLOYEE) {
+      await this._loadEmployeeCard(container);
       return;
     }
-    document.getElementById('page-overview').innerHTML = `<div class="spinner"></div>`;
-    const res = await API.getOverview();
-    if (!res.success) { document.getElementById('page-overview').innerHTML = `<div class="empty-state"><div>${res.message}</div></div>`; return; }
+
+    // ── غير مُفعَّل: يطلب تفعيل الصلاحية ──
+    if (!isElevated) {
+      container.innerHTML = `<div class="empty-state">
+        <div class="empty-state-icon">🔑</div>
+        <div class="empty-state-text">فعّل صلاحيتك للوصول إلى العرض الشامل</div>
+      </div>`;
+      return;
+    }
+
+    // ── المشرف: جدول ورديته | المدير/التنسيق: كل الورديات ──
+    container.innerHTML = `<div class="spinner"></div>`;
+    const filters = (dbRole === ROLES.SUPERVISOR) ? { shift: Auth.getShift() } : {};
+    const res = await API.getOverview(filters);
+    if (!res.success) {
+      container.innerHTML = `<div class="empty-state"><div>${res.message}</div></div>`;
+      return;
+    }
+
+    const title = dbRole === ROLES.SUPERVISOR
+      ? `📊 العرض الشامل - وردية ${Auth.getShift()}`
+      : `📊 العرض الشامل`;
 
     let html = `
       <div class="d-flex items-center gap-12 mb-16" style="flex-wrap:wrap;">
-        <div class="section-title" style="margin-bottom:0;border:none;padding:0;">📊 العرض الشامل</div>
+        <div class="section-title" style="margin-bottom:0;border:none;padding:0;">${title}</div>
+        ${dbRole !== ROLES.SUPERVISOR ? `
         <select class="form-control" style="max-width:160px;" id="ovShiftFilter" onchange="OverviewPage.filterShift(this.value)">
           <option value="">كل الورديات</option>
           ${SHIFTS.map(s => `<option value="${s}">وردية ${s}</option>`).join('')}
-        </select>
+        </select>` : ''}
         <button class="btn btn-success" onclick="OverviewPage.exportExcel()">📥 تصدير Excel</button>
         <button class="btn btn-danger"  onclick="OverviewPage.exportPDF()">📄 PDF</button>
         <button class="btn btn-ghost"   onclick="window.print()">🖨️ طباعة</button>
@@ -395,11 +419,116 @@ const OverviewPage = {
     html += this._buildTable(res.data);
     html += `</div>`;
 
-    document.getElementById('page-overview').innerHTML = html;
+    container.innerHTML = html;
     this._allData = res.data;
   },
 
+  // ── بطاقة البيانات الشاملة للموظف ──
+  async _loadEmployeeCard(container) {
+    container.innerHTML = `<div class="spinner"></div>`;
+    const empId = Auth.getEmployeeId();
+    const shift  = Auth.getShift();
+    const color  = AppState.shiftColors[shift] || '#1565C0';
+
+    const [empRes, leavesRes, regRes, eqRes] = await Promise.all([
+      API.getEmployee(empId),
+      API.getLeaves(),
+      API.getRegions(),
+      API.getEquipment()
+    ]);
+
+    const emp  = empRes.success   && empRes.data       ? empRes.data       : {};
+    const lv   = leavesRes.success && leavesRes.data[0] ? leavesRes.data[0] : {};
+    const reg  = regRes.success   && regRes.data[0]    ? regRes.data[0]    : {};
+    const eq   = eqRes.success    && eqRes.data[0]     ? eqRes.data[0]     : {};
+
+    const infoRow = (key, val, cls) =>
+      `<div class="emp-info-item">
+        <span class="emp-info-key">${key}</span>
+        <span ${cls ? `class="${cls}"` : ''}>${val || '-'}</span>
+      </div>`;
+
+    container.innerHTML = `
+      <div class="section-title">📊 بياناتي الشاملة</div>
+      <div style="max-width:700px;margin:0 auto;">
+
+        <!-- ── هوية ── -->
+        <div class="emp-card mb-16" style="border-right:4px solid ${color}">
+          <div class="emp-card-hd">
+            <span class="emp-card-icon" style="background:${color}15;color:${color};font-size:1.4rem;font-weight:900;">
+              ${(emp.fullName || Auth.getFullName() || '').charAt(0)}
+            </span>
+            <div>
+              <div style="font-size:1.05rem;font-weight:800;">${emp.fullName || Auth.getFullName()}</div>
+              <div style="font-size:.8rem;color:var(--text-muted);">الرقم الوظيفي: <strong>${empId}</strong></div>
+            </div>
+            <div style="margin-right:auto;">${getShiftBadge(shift)} ${getRoleBadge(emp.role || Auth.getRole())}</div>
+          </div>
+          <div class="emp-info-list mt-8">
+            ${infoRow('📱 الجوال', `<span dir="ltr">${emp.phone || '-'}</span>`)}
+            ${infoRow('📍 المنطقة', reg.region)}
+            ${infoRow('🏢 المركز', reg.center)}
+            ${infoRow('🚗 السيارة', reg.carNumber)}
+          </div>
+        </div>
+
+        <!-- ── بطاقات الهوية ── -->
+        <div class="emp-card mb-16">
+          <div class="emp-card-hd"><span class="emp-card-icon" style="background:#EDE7F6">🪪</span>
+            <div><div class="emp-card-title">بطاقات الهوية</div></div>
+          </div>
+          <div class="emp-info-list">
+            ${infoRow('🪪 بطاقة العمل (انتهاء)', emp.workCardExpiry || '-')}
+            ${infoRow('⏳ المتبقي', emp.workCardRemaining !== undefined && emp.workCardRemaining !== '' ? emp.workCardRemaining + ' يوم' : '-', getDaysColor(emp.workCardRemaining))}
+            ${infoRow('📋 بطاقة المصدر (انتهاء)', emp.sourceCardExpiry || '-')}
+            ${infoRow('⏳ المتبقي', emp.sourceCardRemaining !== undefined && emp.sourceCardRemaining !== '' ? emp.sourceCardRemaining + ' يوم' : '-', getDaysColor(emp.sourceCardRemaining))}
+          </div>
+        </div>
+
+        <!-- ── الإجازات ── -->
+        <div class="emp-card mb-16">
+          <div class="emp-card-hd"><span class="emp-card-icon" style="background:#E8F5E9">🌴</span>
+            <div><div class="emp-card-title">رصيد الإجازات</div></div>
+          </div>
+          <div class="emp-balance-row" style="margin-top:12px;">
+            <div class="emp-balance-box" style="background:#E8F5E9">
+              <div style="font-size:1.9rem;font-weight:900;color:#2E7D32">${lv.systemRemaining ?? '-'}</div>
+              <div style="font-size:.72rem;color:#388E3C;font-weight:600">سنوية متبقية</div>
+              <div style="font-size:.68rem;color:#A5D6A7">من ${lv.systemBalance ?? '-'} يوم</div>
+            </div>
+            <div class="emp-balance-box" style="background:#E0F2F1">
+              <div style="font-size:1.6rem;font-weight:800;color:#00897B">${lv.scheduledRemaining ?? '-'}</div>
+              <div style="font-size:.72rem;color:#00897B;font-weight:600">مجدولة متبقية</div>
+              <div style="font-size:.68rem;color:#80CBC4">من ${lv.scheduledBalance ?? '-'} يوم</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── العدد والمقاسات ── -->
+        <div class="emp-card">
+          <div class="emp-card-hd"><span class="emp-card-icon" style="background:#E8EAF6">🔧</span>
+            <div><div class="emp-card-title">العدد والمقاسات</div></div>
+          </div>
+          <div class="emp-eq-grid" style="margin-top:12px;">
+            ${[['قميص CAT2', eq.cat2Shirt], ['بنطلون CAT2', eq.cat2Pants],
+               ['سيفتي شوز', eq.safetyShoes], ['بدلة CAT4', eq.cat4Suit],
+               ['برافو', eq.bravo], ['ميجر', eq.major], ['أخرى', eq.otherQty]]
+              .map(([l, v]) => `
+              <div class="emp-eq-item">
+                <div class="emp-eq-label">${l}</div>
+                <div class="emp-eq-val">${v || '—'}</div>
+              </div>`).join('')}
+          </div>
+        </div>
+
+      </div>`;
+  },
+
   _buildTable(data) {
+    if (!data || data.length === 0) {
+      return `<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">لا توجد بيانات</div></div>`;
+    }
+
     let html = `<div class="card"><div class="table-wrapper"><table class="data-table" id="overviewTable">
       <thead><tr>
         <th>الرقم</th><th>الاسم</th><th>الوردية</th><th>الصلاحية</th>
