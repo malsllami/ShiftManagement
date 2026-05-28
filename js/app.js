@@ -80,14 +80,11 @@ async function handleLogin(e) {
     return;
   }
 
-  lockButton(btn, 8000);
+  lockButton(btn, 30000);
   const res = await API.login(empId, password);
 
   if (!res.success) {
-    // استعادة زر الدخول عند الخطأ
-    btn.disabled = false;
-    btn.style.cssText = '';
-    btn.innerHTML = '🔐 تسجيل الدخول';
+    unlockButton(btn);
     showLoginError(res.message || 'خطأ في تسجيل الدخول');
     return;
   }
@@ -118,7 +115,15 @@ function showLoginError(msg) {
 // تهيئة التطبيق بعد الدخول
 // ================================================================
 async function initApp() {
-  hideLoginPage();
+  // إخفاء صفحة الدخول أولاً
+  const loginPage = document.getElementById('loginPage');
+  if (loginPage) {
+    loginPage.style.transition = 'opacity .3s ease';
+    loginPage.style.opacity    = '0';
+    await new Promise(r => setTimeout(r, 300));
+    loginPage.classList.remove('active');
+    loginPage.style.cssText = '';
+  }
   showLayout();
   updateUserHeader();
 
@@ -445,13 +450,22 @@ function createToastContainer() {
 // إظهار / إخفاء الصفحات
 // ================================================================
 function showLoginPage() {
-  document.getElementById('loginPage').classList.add('active');
+  const lp = document.getElementById('loginPage');
+  lp.classList.add('active');
+  lp.style.opacity = '1';
 }
 function hideLoginPage() {
   document.getElementById('loginPage').classList.remove('active');
 }
 function showLayout() {
-  document.getElementById('appLayout').classList.add('active');
+  const layout = document.getElementById('appLayout');
+  layout.classList.add('active');
+  layout.style.opacity = '0';
+  layout.style.transition = 'opacity .35s ease';
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => { layout.style.opacity = '1'; });
+  });
+  setTimeout(() => { layout.style.cssText = ''; }, 400);
 }
 
 // تغيير كلمة المرور داخل بطاقة الدخول
