@@ -136,12 +136,17 @@ body {
    ================================================================ */
 #loginPage {
   min-height: 100vh;
-  display: flex;
+  display: none;            /* مخفية بالافتراضي */
   align-items: center;
   justify-content: center;
   background: var(--gradient);
-  position: relative;
+  position: fixed;          /* فوق كل شيء */
+  inset: 0;
+  z-index: 9999;
   overflow: hidden;
+}
+#loginPage.active {
+  display: flex;            /* تظهر فقط عند .active */
 }
 
 #loginPage::before {
@@ -285,6 +290,11 @@ body {
   cursor: pointer;
   transition: var(--transition);
   margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
