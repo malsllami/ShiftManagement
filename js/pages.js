@@ -614,7 +614,10 @@ const SettingsPage = {
         </div>
       </div>
 
-      <div class="mt-24" style="display:flex;gap:12px;justify-content:flex-end;">
+      <div class="mt-24" style="display:flex;gap:12px;justify-content:flex-end;flex-wrap:wrap;">
+        <button class="btn btn-ghost" onclick="SettingsPage.repairRows(this)" title="إنشاء الصفوف المفقودة للموظفين المضافين يدوياً">
+          🔧 إصلاح الصفوف المفقودة
+        </button>
         <button class="btn btn-primary btn-lg" onclick="SettingsPage.save()">💾 حفظ الإعدادات</button>
       </div>`;
 
@@ -626,6 +629,14 @@ const SettingsPage = {
         document.getElementById(`set_shift_${k}_color_text`).value = this.value;
       });
     });
+  },
+
+  async repairRows(btn) {
+    if (!confirm('سيتم إنشاء صفوف مفقودة في جداول المناطق والعدد والإجازات لكل موظف. متابعة؟')) return;
+    lockButton(btn, 15000);
+    const res = await API.repairLinkedRows();
+    unlockButton(btn);
+    showToast(res.success ? res.message : res.message, res.success ? 'success' : 'error');
   },
 
   async save() {
@@ -663,7 +674,7 @@ async function reviewLeave(requestId, action) {
   const btn = event.target;
   lockButton(btn, 3000);
   const res = await API.reviewLeaveRequest(requestId, action, reason);
-  btn.disabled = false; btn.classList.remove('loading');
+  unlockButton(btn);
   showToast(res.message, res.success ? 'success' : 'error');
   if (res.success) await LeavesPage.load();
 }
@@ -677,7 +688,7 @@ async function reviewOT(requestId, action) {
   const btn = event.target;
   lockButton(btn, 3000);
   const res = await API.reviewOvertime(requestId, action, reason);
-  btn.disabled = false; btn.classList.remove('loading');
+  unlockButton(btn);
   showToast(res.message, res.success ? 'success' : 'error');
   if (res.success) await OvertimePage.load();
 }
@@ -691,7 +702,7 @@ async function coordProcessOT(requestId, action) {
   const btn = event.target;
   lockButton(btn, 3000);
   const res = await API.processOvertimeCoordinator(requestId, action, reason);
-  btn.disabled = false; btn.classList.remove('loading');
+  unlockButton(btn);
   showToast(res.message, res.success ? 'success' : 'error');
   if (res.success) await OvertimePage.load();
 }
@@ -700,7 +711,7 @@ async function ackOT(requestId, received) {
   const btn = event.target;
   lockButton(btn, 3000);
   const res = await API.acknowledgeOvertimeReceipt(requestId, received);
-  btn.disabled = false; btn.classList.remove('loading');
+  unlockButton(btn);
   showToast(res.message, res.success ? 'success' : 'error');
   if (res.success) await OvertimePage.load();
 }
