@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إدارة الورديات - السعودية للطاقة</title>
+  <meta name="description" content="نظام إدارة ورديات السعودية للطاقة">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="img/favicon.png" type="image/png">
+</head>
+<body>
+
+<!-- ================================================================
+     صفحة تسجيل الدخول
+     ================================================================ -->
+<div id="loginPage">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="img/logo.png" alt="السعودية للطاقة" onerror="this.style.display='none'">
+      <h1>إدارة الورديات</h1>
+      <p>السعودية للطاقة</p>
+    </div>
+
+    <form onsubmit="handleLogin(event)">
+      <div class="login-field">
+        <label>الرقم الوظيفي</label>
+        <input type="text" id="loginId" class="login-input"
+               placeholder="أدخل رقمك الوظيفي"
+               autocomplete="username" inputmode="numeric">
+      </div>
+
+      <div class="login-field">
+        <label>كلمة المرور</label>
+        <input type="password" id="loginPass" class="login-input"
+               placeholder="كلمة المرور"
+               autocomplete="current-password">
+      </div>
+
+      <div id="loginError" class="form-error"></div>
+
+      <button type="submit" id="loginBtn" class="btn-login">
+        🔐 تسجيل الدخول
+      </button>
+    </form>
+
+    <p style="text-align:center;color:rgba(255,255,255,.6);font-size:.75rem;margin-top:20px;">
+      © 2026 السعودية للطاقة - إدارة الورديات
+    </p>
+  </div>
+</div>
+
+<!-- ================================================================
+     صفحة تغيير كلمة المرور (إجبارية)
+     ================================================================ -->
+<div id="changePassPage">
+  <div class="login-card">
+    <div class="login-logo">
+      <h1 id="changePassTitle">تغيير كلمة المرور</h1>
+      <p id="changePassForcedNote" class="hidden" style="color:#FFD54F;">
+        ⚠️ يجب تغيير كلمة المرور الافتراضية قبل المتابعة
+      </p>
+    </div>
+
+    <div class="login-field">
+      <label>كلمة المرور الحالية</label>
+      <input type="password" id="oldPassInput" class="login-input" placeholder="كلمة المرور الحالية">
+    </div>
+    <div class="login-field">
+      <label>كلمة المرور الجديدة (6 أحرف كحد أدنى)</label>
+      <input type="password" id="newPassInput" class="login-input" placeholder="كلمة المرور الجديدة">
+    </div>
+    <div class="login-field">
+      <label>تأكيد كلمة المرور</label>
+      <input type="password" id="confPassInput" class="login-input" placeholder="تأكيد كلمة المرور">
+    </div>
+
+    <button id="changePassBtn" class="btn-login" onclick="handleChangePassword(true)">
+      💾 تغيير كلمة المرور
+    </button>
+    <button id="changePassSkipBtn" class="btn-login hidden"
+            style="background:transparent;border:1px solid rgba(255,255,255,.4);margin-top:10px;"
+            onclick="hideChangePasswordPage(); navigateTo('dashboard')">
+      تخطي
+    </button>
+  </div>
+</div>
+
+<!-- ================================================================
+     Layout الرئيسي
+     ================================================================ -->
+<div id="appLayout">
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-brand">
+      <img src="img/logo.png" alt="SE" class="header-logo" onerror="this.style.display='none'">
+      <div>
+        <div class="header-title">إدارة الورديات</div>
+        <div class="header-subtitle">السعودية للطاقة</div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button class="theme-toggle" id="themeToggle" onclick="cycleTheme()">☀️ فاتح</button>
+
+      <div style="position:relative;">
+        <button class="notif-btn" onclick="toggleNotifPanel()" title="الإشعارات">🔔
+          <span id="notifBadge" class="notif-badge hidden">0</span>
+        </button>
+        <div class="notifications-panel" id="notifPanel">
+          <div style="padding:14px 18px;font-weight:700;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+            <span>🔔 الإشعارات</span>
+            <button class="btn btn-ghost btn-sm" onclick="navigateTo('notifications');closeNotifPanel()">عرض الكل</button>
+          </div>
+          <div id="notifPanelList"><div class="spinner spinner-sm"></div></div>
+        </div>
+      </div>
+
+      <div class="user-info" onclick="toggleUserMenu()">
+        <div class="user-avatar" id="headerUserAvatar">م</div>
+        <div>
+          <div class="user-name" id="headerUserName">...</div>
+          <div class="user-role" id="headerUserRole">...</div>
+        </div>
+        <span style="color:rgba(255,255,255,.7)">▾</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- User Dropdown -->
+  <div id="userMenu" style="display:none;position:fixed;top:68px;left:16px;z-index:200;
+       background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+       box-shadow:var(--shadow-lg);padding:8px;min-width:200px;">
+    <div style="padding:10px 14px;border-bottom:1px solid var(--border);margin-bottom:8px;">
+      <div style="font-weight:700;" id="menuUserName"></div>
+      <div style="font-size:.8rem;color:var(--text-muted);" id="menuUserRole"></div>
+    </div>
+    <button class="btn btn-ghost w-100" style="justify-content:flex-start;margin-bottom:4px;"
+            onclick="openChangePassModal()">🔐 تغيير كلمة المرور</button>
+    <button class="btn btn-danger w-100" style="justify-content:flex-start;"
+            onclick="handleLogout()">🚪 تسجيل الخروج</button>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="app-nav" id="appNav"></nav>
+
+  <!-- Main Content -->
+  <main class="app-main">
+    <div id="page-dashboard"     class="page-section"></div>
+    <div id="page-calendar"      class="page-section hidden"></div>
+    <div id="page-employees"     class="page-section hidden"></div>
+    <div id="page-regions"       class="page-section hidden"></div>
+    <div id="page-equipment"     class="page-section hidden"></div>
+    <div id="page-leaves"        class="page-section hidden"></div>
+    <div id="page-overtime"      class="page-section hidden"></div>
+    <div id="page-overview"      class="page-section hidden"></div>
+    <div id="page-notifications" class="page-section hidden"></div>
+    <div id="page-log"           class="page-section hidden"></div>
+    <div id="page-settings"      class="page-section hidden"></div>
+  </main>
+</div>
+
+<!-- ================================================================
+     لوحة الرمز الثانوي
+     ================================================================ -->
+<div class="code-overlay" id="codeOverlay">
+  <div class="code-card">
+    <div class="code-icon">🔑</div>
+    <div class="code-title">رمز الصلاحية</div>
+    <p style="color:var(--text-muted);font-size:.875rem;margin-bottom:20px;">
+      أدخل الرمز الخاص بصلاحيتك للدخول
+    </p>
+    <input type="password" id="codeInput" class="form-control code-input"
+           placeholder="● ● ● ● ● ●" maxlength="20"
+           onkeydown="if(event.key==='Enter') submitElevatedCode()">
+    <div id="codeError" class="form-error mt-8"></div>
+    <div style="display:flex;gap:12px;margin-top:20px;">
+      <button class="btn btn-ghost w-100" onclick="document.getElementById('codeOverlay').classList.remove('open')">إلغاء</button>
+      <button class="btn btn-primary w-100" id="codeSubmitBtn" onclick="submitElevatedCode()">دخول</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     نافذة: إضافة / تعديل موظف
+     ================================================================ -->
+<div class="modal-overlay" id="employeeModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title">👤 موظف</div>
+      <button class="modal-close" onclick="closeModal('employeeModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="empModalForm">
+        <div class="grid-2">
+          <div id="empModalIdGroup" class="form-group">
+            <label class="form-label">الرقم الوظيفي <span class="req">*</span></label>
+            <input type="text" id="empModalId" class="form-control" required inputmode="numeric">
+          </div>
+          <div class="form-group">
+            <label class="form-label">الاسم الكامل <span class="req">*</span></label>
+            <input type="text" id="empModalName" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">رقم الجوال</label>
+            <div class="phone-field">
+              <div class="phone-country-code">🇸🇦 +966</div>
+              <input type="tel" id="empModalPhone" inputmode="numeric" placeholder="5XXXXXXXX" maxlength="9">
+            </div>
+            <div class="form-hint">يبدأ بـ 5 مكوّن من 9 أرقام</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">الوردية <span class="req">*</span></label>
+            <select id="empModalShift" class="form-control" required>
+              <option value="">اختر الوردية</option>
+              <option value="أ">وردية أ</option>
+              <option value="ب">وردية ب</option>
+              <option value="د">وردية د</option>
+              <option value="ج">وردية ج</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">الصلاحية</label>
+            <select id="empModalRole" class="form-control">
+              <option value="موظف">موظف</option>
+              <option value="مشرف وردية">مشرف وردية</option>
+              <option value="تنسيق اداري">تنسيق اداري</option>
+              <option value="مدير">مدير</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">رمز الصلاحية</label>
+            <input type="text" id="empModalRoleCode" class="form-control" placeholder="للمشرف والتنسيق والمدير">
+          </div>
+          <div class="form-group">
+            <label class="form-label">تاريخ انتهاء بطاقة العمل</label>
+            <input type="date" id="empModalWorkExpiry" class="form-control">
+          </div>
+          <div class="form-group">
+            <label class="form-label">تاريخ انتهاء بطاقة المصدر/مستلم</label>
+            <input type="date" id="empModalSrcExpiry" class="form-control">
+          </div>
+          <div class="form-group">
+            <label class="form-label">حالة الحساب</label>
+            <select id="empModalStatus" class="form-control">
+              <option value="نشط">نشط</option>
+              <option value="موقوف">موقوف</option>
+              <option value="محذوف">محذوف</option>
+            </select>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('employeeModal')">إلغاء</button>
+      <button class="btn btn-primary" id="empModalSaveBtn" onclick="submitEmployeeModal()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     نافذة: نقل وردية
+     ================================================================ -->
+<div class="modal-overlay" id="transferModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🔄 نقل الموظف</div>
+      <button class="modal-close" onclick="closeModal('transferModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="grid-2" style="margin-bottom:16px;">
+        <div><span class="text-muted text-small">الرقم الوظيفي: </span><strong id="transferEmpId"></strong></div>
+        <div><span class="text-muted text-small">الاسم: </span><strong id="transferEmpName"></strong></div>
+        <div><span class="text-muted text-small">الوردية الحالية: </span><strong id="transferOldShift" style="color:var(--warning)"></strong></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">الوردية الجديدة <span class="req">*</span></label>
+        <select id="transferNewShift" class="form-control">
+          <option value="">اختر الوردية</option>
+          <option value="أ">وردية أ</option>
+          <option value="ب">وردية ب</option>
+          <option value="د">وردية د</option>
+          <option value="ج">وردية ج</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">ملاحظات</label>
+        <textarea id="transferNotes" class="form-control" rows="3" placeholder="سبب النقل أو ملاحظات..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('transferModal')">إلغاء</button>
+      <button class="btn btn-warning" id="transferSaveBtn" onclick="submitTransferModal()">🔄 تأكيد النقل</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     نافذة: تغيير الصلاحية
+     ================================================================ -->
+<div class="modal-overlay" id="roleModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🎖️ تغيير الصلاحية</div>
+      <button class="modal-close" onclick="closeModal('roleModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom:16px;">
+        <strong id="roleEmpName"></strong>
+        <span class="text-muted"> | الصلاحية الحالية: </span>
+        <strong id="roleCurrentRole"></strong>
+      </div>
+      <div class="form-group">
+        <label class="form-label">الصلاحية الجديدة</label>
+        <select id="roleNewRole" class="form-control">
+          <option value="موظف">موظف</option>
+          <option value="مشرف وردية">مشرف وردية</option>
+          <option value="تنسيق اداري">تنسيق اداري</option>
+          <option value="مدير">مدير</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">رمز الصلاحية الجديد</label>
+        <input type="text" id="roleNewCode" class="form-control" placeholder="رمز الدخول للوحة الصلاحية">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('roleModal')">إلغاء</button>
+      <button class="btn btn-primary" id="roleSaveBtn" onclick="submitRoleModal()">💾 تأكيد</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     نافذة: المنطقة والمركز
+     ================================================================ -->
+<div class="modal-overlay" id="regionModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">📍 تعديل المنطقة والمركز</div>
+      <button class="modal-close" onclick="closeModal('regionModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="grid-2" style="margin-bottom:16px;">
+        <div><span class="text-muted text-small">الرقم: </span><strong id="regionEmpId"></strong></div>
+        <div><span class="text-muted text-small">الاسم: </span><strong id="regionEmpName"></strong></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">المنطقة</label>
+        <select id="regionSelect" class="form-control">
+          <option value="">اختر المنطقة</option>
+          <option value="شمال">شمال</option>
+          <option value="جنوب">جنوب</option>
+          <option value="وسط">وسط</option>
+          <option value="شرق">شرق</option>
+          <option value="غرب">غرب</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">المركز</label>
+        <input type="text" id="regionCenter" class="form-control" placeholder="اسم المركز">
+      </div>
+      <div class="form-group">
+        <label class="form-label">رقم السيارة</label>
+        <input type="text" id="regionCar" class="form-control" placeholder="رقم السيارة">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('regionModal')">إلغاء</button>
+      <button class="btn btn-primary" id="regionSaveBtn" onclick="submitRegionModal()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     نافذة: العدد والمقاسات
+     ================================================================ -->
+<div class="modal-overlay" id="equipmentModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title">🔧 تعديل العدد والمقاسات</div>
+      <button class="modal-close" onclick="closeModal('equipmentModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="grid-2" style="margin-bottom:16px;">
+        <div><span class="text-muted text-small">الرقم: </span><strong id="eqEmpId"></strong></div>
+        <div><span class="text-muted text-small">الاسم: </span><strong id="eqEmpName"></strong></div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group"><label class="form-label">قميص CAT 2</label><input type="text" id="eqCat2Shirt" class="form-control" placeholder="المقاس"></div>
+        <div class="form-group"><label class="form-label">بنطلون CAT 2</label><input type="text" id="eqCat2Pants" class="form-control" placeholder="المقاس"></div>
+        <div class="form-group"><label class="form-label">سيفتي شوز</label><input type="text" id="eqSafetyShoes" class="form-control" placeholder="المقاس"></div>
+        <div class="form-group"><label class="form-label">بدلة CAT 4</label><input type="text" id="eqCat4Suit" class="form-control" placeholder="المقاس"></div>
+        <div class="form-group"><label class="form-label">برافو</label><input type="text" id="eqBravo" class="form-control" placeholder="المقاس / العدد"></div>
+        <div class="form-group"><label class="form-label">ميجر</label><input type="text" id="eqMajor" class="form-control" placeholder="المقاس / العدد"></div>
+        <div class="form-group"><label class="form-label">عدد أخرى</label><input type="text" id="eqOther" class="form-control" placeholder="وصف"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('equipmentModal')">إلغاء</button>
+      <button class="btn btn-primary" id="eqSaveBtn" onclick="submitEquipmentModal()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     نافذة: طلب إجازة
+     ================================================================ -->
+<div class="modal-overlay" id="lvReqModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title">🌴 طلب إجازة</div>
+      <button class="modal-close" onclick="closeModal('lvReqModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="grid-2" style="margin-bottom:16px;padding:12px;background:var(--surface2);border-radius:var(--radius);">
+        <div><span class="text-muted text-small">الرقم الوظيفي: </span><strong id="lvReqEmpId"></strong></div>
+        <div><span class="text-muted text-small">الاسم: </span><strong id="lvReqEmpName"></strong></div>
+        <div><span class="text-muted text-small">الوردية: </span><strong id="lvReqShift"></strong></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label class="form-label">نوع الإجازة <span class="req">*</span></label>
+          <select id="lvType" class="form-control" onchange="lvCalcDuration()">
+            <option value="">اختر نوع الإجازة</option>
+          </select>
+        </div>
+        <div></div>
+        <div class="form-group">
+          <label class="form-label">تاريخ البداية <span class="req">*</span></label>
+          <input type="date" id="lvStartDate" class="form-control" onchange="lvCalcDuration()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">تاريخ الانتهاء <span class="req">*</span></label>
+          <input type="date" id="lvEndDate" class="form-control" onchange="lvCalcDuration()">
+        </div>
+      </div>
+
+      <div style="padding:12px;background:var(--surface2);border-radius:var(--radius);margin-bottom:16px;text-align:center;">
+        <span class="text-muted text-small">المدة: </span>
+        <strong id="lvDuration" style="font-size:1.1rem;color:var(--primary);">-</strong>
+      </div>
+
+      <div id="lvBalanceInfo" class="mb-16"></div>
+      <div id="lvMiniCal" class="mb-16"></div>
+
+      <div class="form-group">
+        <label class="form-label">ملاحظات</label>
+        <textarea id="lvNotes" class="form-control" rows="3" placeholder="ملاحظات إضافية (اختياري)"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('lvReqModal')">إلغاء</button>
+      <button class="btn btn-primary" id="lvSubmitBtn" onclick="submitLeaveRequest()">📤 إرسال الطلب</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     نافذة: طلب عمل إضافي
+     ================================================================ -->
+<div class="modal-overlay" id="overtimeFormModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">⏱️ طلب عمل إضافي</div>
+      <button class="modal-close" onclick="closeModal('overtimeFormModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="grid-2" style="margin-bottom:16px;padding:12px;background:var(--surface2);border-radius:var(--radius);">
+        <div><span class="text-muted text-small">الرقم الوظيفي: </span><strong id="otEmpId"></strong></div>
+        <div><span class="text-muted text-small">الاسم: </span><strong id="otEmpName"></strong></div>
+        <div><span class="text-muted text-small">الوردية: </span><strong id="otShift"></strong></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">التاريخ <span class="req">*</span></label>
+        <input type="date" id="otDate" class="form-control" onchange="otDateChanged()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">اليوم</label>
+        <div id="otDay" style="padding:10px;background:var(--surface2);border-radius:var(--radius);font-weight:700;color:var(--primary);">-</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">عدد ساعات العمل الإضافي <span class="req">*</span></label>
+        <input type="text" id="otHours" class="form-control" inputmode="decimal"
+               placeholder="مثال: 2 أو 1.5 أو 2٫5" dir="ltr">
+        <div class="form-hint">يقبل الأرقام العربية والإنجليزية والكسور</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">سبب العمل الإضافي <span class="req">*</span></label>
+        <textarea id="otReason" class="form-control" rows="4" placeholder="اشرح سبب العمل الإضافي..." required></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('overtimeFormModal')">إلغاء</button>
+      <button class="btn btn-primary" id="otSubmitBtn" onclick="submitOvertimeForm()">📤 إرسال الطلب</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     نافذة: رصيد الإجازة
+     ================================================================ -->
+<div class="modal-overlay" id="lbModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🌴 تعديل رصيد الإجازة</div>
+      <button class="modal-close" onclick="closeModal('lbModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom:16px;"><strong id="lbEmpName"></strong></div>
+      <div id="lbFirstEntryNote" class="hidden"
+           style="padding:10px;background:#E8F5E9;border-radius:var(--radius);color:#2E7D32;margin-bottom:16px;font-size:.875rem;">
+        ✅ الإدخال الأول: يمكن للموظف إدخال رصيده مرة واحدة ثم يُعطَّل الإدخال منه
+      </div>
+      <div class="form-group">
+        <label class="form-label">الرصيد في النظام (سنوية)</label>
+        <input type="number" id="lbSysBalance" class="form-control" min="0" max="999">
+      </div>
+      <div class="form-group">
+        <label class="form-label">رصيد مجدولة</label>
+        <input type="number" id="lbSchBalance" class="form-control" min="0" max="999">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('lbModal')">إلغاء</button>
+      <button class="btn btn-primary" id="lbSaveBtn" onclick="submitLeaveBalanceModal()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     نافذة: تغيير كلمة المرور
+     ================================================================ -->
+<div class="modal-overlay" id="changePassModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🔐 تغيير كلمة المرور</div>
+      <button class="modal-close" onclick="closeModal('changePassModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">كلمة المرور الحالية</label>
+        <input type="password" id="cpOld" class="form-control">
+      </div>
+      <div class="form-group">
+        <label class="form-label">كلمة المرور الجديدة</label>
+        <input type="password" id="cpNew" class="form-control">
+      </div>
+      <div class="form-group">
+        <label class="form-label">تأكيد كلمة المرور</label>
+        <input type="password" id="cpConf" class="form-control">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('changePassModal')">إلغاء</button>
+      <button class="btn btn-primary" id="cpSaveBtn" onclick="submitChangePassModal()">💾 تغيير</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ================================================================
+     Scripts
+     ================================================================ -->
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/calendar.js"></script>
+<script src="js/pages.js"></script>
+<script src="js/modals.js"></script>
+
+<script>
+// ── دوال مساعدة للواجهة ──
+
+function toggleNotifPanel() {
+  const panel = document.getElementById('notifPanel');
+  const isOpen = panel.classList.toggle('open');
+  if (isOpen) loadNotifPanel();
+}
+function closeNotifPanel() {
+  document.getElementById('notifPanel').classList.remove('open');
+}
+async function loadNotifPanel() {
+  const res  = await API.getNotifications({ unreadOnly: false });
+  const list = document.getElementById('notifPanelList');
+  if (!res.success || res.data.length === 0) {
+    list.innerHTML = `<div class="empty-state" style="padding:24px;"><div class="empty-state-icon">🔔</div><div class="empty-state-text">لا توجد إشعارات</div></div>`;
+    return;
+  }
+  const items = res.data.slice(0, 8);
+  list.innerHTML = items.map(n => `
+    <div class="notif-item ${n.isRead?'':'unread'} ${n.isCompleted?'completed':''}">
+      <div class="notif-msg">${n.message}</div>
+      <div class="notif-time">${n.datetime?.split(' ')[0] || ''}</div>
+    </div>`).join('');
+}
+
+function toggleUserMenu() {
+  const menu = document.getElementById('userMenu');
+  const show = menu.style.display === 'none' || !menu.style.display;
+  menu.style.display = show ? 'block' : 'none';
+  if (show) {
+    document.getElementById('menuUserName').textContent = Auth.getFullName();
+    document.getElementById('menuUserRole').textContent = Auth.getRole();
+  }
+}
+
+function openChangePassModal() {
+  document.getElementById('userMenu').style.display = 'none';
+  document.getElementById('cpOld').value  = '';
+  document.getElementById('cpNew').value  = '';
+  document.getElementById('cpConf').value = '';
+  openModal('changePassModal');
+}
+
+async function submitChangePassModal() {
+  const old  = document.getElementById('cpOld').value.trim();
+  const nw   = document.getElementById('cpNew').value.trim();
+  const conf = document.getElementById('cpConf').value.trim();
+  if (!old||!nw||!conf) { showToast('جميع الحقول مطلوبة','error'); return; }
+  if (nw.length < 6)    { showToast('كلمة المرور 6 أحرف كحد أدنى','error'); return; }
+  if (nw !== conf)       { showToast('كلمتا المرور غير متطابقتين','error'); return; }
+  const btn = document.getElementById('cpSaveBtn');
+  lockButton(btn, 5000);
+  const res = await API.changePassword(old, nw);
+  btn.disabled = false; btn.classList.remove('loading');
+  showToast(res.message, res.success ? 'success' : 'error');
+  if (res.success) closeModal('changePassModal');
+}
+
+// إضافة أنواع الإجازات في القائمة المنسدلة
+document.addEventListener('DOMContentLoaded', () => {
+  // تطبيق الثيم
+  const saved = localStorage.getItem('se_theme') || 'light';
+  const labels = { light: '☀️ فاتح', dark: '🌙 داكن', mixed: '🎨 خليط' };
+  const themeBtn = document.getElementById('themeToggle');
+  if (themeBtn) themeBtn.innerHTML = labels[saved] || '☀️ فاتح';
+});
+
+// تحديث قائمة الإجازات عند فتح النموذج
+const _origOpenLeave = window.openLeaveRequestModal;
+window.openLeaveRequestModal = async function() {
+  if (_origOpenLeave) await _origOpenLeave();
+  const sel = document.getElementById('lvType');
+  if (sel) {
+    sel.innerHTML = '<option value="">اختر نوع الإجازة</option>';
+    (AppState.leaveTypes || LEAVE_TYPES).forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t; opt.textContent = t;
+      sel.appendChild(opt);
+    });
+  }
+};
+
+// إغلاق القوائم عند الضغط خارجها
+document.addEventListener('click', e => {
+  if (!e.target.closest('.user-info') && !e.target.closest('#userMenu')) {
+    document.getElementById('userMenu').style.display = 'none';
+  }
+  if (!e.target.closest('.notif-btn') && !e.target.closest('.notifications-panel')) {
+    document.getElementById('notifPanel').classList.remove('open');
+  }
+});
+</script>
+</body>
+</html>
