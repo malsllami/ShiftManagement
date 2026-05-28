@@ -1,13 +1,343 @@
 // ================================================================
-// dashboard.js - لوحة التحكم الرئيسية
+// dashboard.js - لوحة التحكم
 // ================================================================
 
 const Dashboard = {
+
   async load() {
-    const role = Auth.getActiveRole();
-    const container = document.getElementById('page-dashboard');
+    const isElevated = Auth.hasElevatedAccess();
+    const dbRole     = Auth.getRole();
+    const container  = document.getElementById('page-dashboard');
     container.innerHTML = `<div class="spinner"></div>`;
 
+    // الموظف - أو أي شخص لم يُفعّل صلاحيته بعد → يرى لوحة الموظف
+    if (!isElevated || dbRole === ROLES.EMPLOYEE) {
+      await this._loadEmployeeDashboard(container);
+    } else {
+      await this._loadElevatedDashboard(Auth.getActiveRole(), container);
+    }
+  },
+
+  // ================================================================
+  // لوحة الموظف الشخصية
+  // ================================================================
+  async _loadEmployeeDashboard(container) {
+    const empId = Auth.getEmployeeId();
+    const shift = Auth.getShift();
+
+    // جلب جميع البيانات بالتوازي
+    const [empRes, leavesRes, leaveReqRes, otRes, regRes, eqRes, statsRes, todayRes] =
+      await Promise.all([
+        API.getEmployee(empId),
+        API.getLeaves(),
+        API.getLeaveRequests(),
+        API.getOvertime(),
+        API.getRegions(),
+        API.getEquipment(),
+        API.getShiftStats(),
+        API.getTodayStatus()
+      ]);
+
+    const emp   = empRes.success    ? empRes.data                          : null;
+    const leave = leavesRes.success && leavesRes.data[0] ? leavesRes.data[0] : null;
+    const reqs  = leaveReqRes.success ? leaveReqRes.data  : [];
+    const ots   = otRes.success       ? otRes.data        : [];
+    const reg   = regRes.success  && regRes.data[0]  ? regRes.data[0]  : null;
+    const eq    = eqRes.success   && eqRes.data[0]   ? eqRes.data[0]   : null;
+    const stat  = statsRes.success ? (statsRes.data[shift] || {}) : {};
+    const today = todayRes.success ? (todayRes.data[shift] || {}) : {};
+    const color = AppState.shiftColors[shift] || '#1565C0';
+
+    const pendingLeaves = reqs.filter(r => r.status === 'قيد المراجعة').length;
+    const pendingOTs    = ots.filter(o => o.overallStatus === 'تم الانشاء' || o.overallStatus === 'ارسل في النظام' && o.receiptStatus !== 'تم الاستلام').length;
+    const totalOTHours  = ots.filter(o => o.overallStatus === 'تم الاستلام')
+                             .reduce((s, o) => s + (Number(o.hours) || 0), 0);
+
+    const statusInfo = {
+      'صباح': { label: 'دوام صباحي', icon: '🌅', bg: '#E3F2FD', col: '#1565C0' },
+      'مساء': { label: 'دوام مسائي', icon: '🌙', bg: '#FFF3E0', col: '#E65100' },
+      'راحة': { label: 'يوم راحة',   icon: '🏠', bg: '#F3E5F5', col: '#6A1B9A' }
+    };
+    const si = statusInfo[today.status] || { label: '---', icon: '⏳', bg: '#f5f5f5', col: '#999' };
+
+    const html = `
+<div class="emp-dashboard">
+
+  <!-- ─── ترحيب + بطاقة الوردية ─── -->
+  <div class="emp-top-row">
+
+    <!-- ترحيب -->
+    <div class="emp-welcome-card" style="border-right:4px solid ${color}">
+      <div class="emp-welcome-left">
+        <div class="emp-avatar" style="background:${color}18;color:${color}">
+          ${(emp?.fullName || Auth.getFullName()).charAt(0)}
+        </div>
+        <div>
+          <div style="font-size:1.1rem;font-weight:800;color:var(--text)">
+            أهلاً، ${emp?.fullName || Auth.getFullName()}
+          </div>
+          <div style="font-size:.82rem;color:var(--text-muted);margin-top:2px">
+            الرقم الوظيفي: <strong>${empId}</strong>
+          </div>
+        </div>
+      </div>
+      <div class="emp-shift-chip" style="border:2px solid ${color}20;background:${color}0a">
+        <div style="font-size:1.4rem;font-weight:900;color:${color}">وردية ${shift}</div>
+        <div class="emp-status-pill" style="background:${si.bg};color:${si.col}">
+          ${si.icon} ${si.label}
+        </div>
+      </div>
+    </div>
+
+    <!-- إحصاء الوردية: عدد + مناطق/مراكز فقط -->
+    <div class="emp-shift-stat-card" style="border-top:4px solid ${color}">
+      <div class="emp-card-hd">
+        <span class="emp-card-icon" style="background:${color}15">👥</span>
+        <div>
+          <div class="emp-card-title">أعضاء وردية ${shift}</div>
+          <div class="emp-card-sub">عدد الموظفين في ورديتك</div>
+        </div>
+      </div>
+      <div class="emp-count-row">
+        <div class="emp-count-box" style="border-color:${color}30">
+          <div style="font-size:2.2rem;font-weight:900;color:${color}">${stat.total || 0}</div>
+          <div class="emp-count-lbl">إجمالي</div>
+        </div>
+        <div class="emp-count-box" style="border-color:${color}30">
+          <div style="font-size:1.6rem;font-weight:700;color:${color}">${stat.employees || 0}</div>
+          <div class="emp-count-lbl">موظف</div>
+        </div>
+        <div class="emp-count-box" style="border-color:${color}30">
+          <div style="font-size:1.6rem;font-weight:700;color:${color}">${stat.supervisors || 0}</div>
+          <div class="emp-count-lbl">مشرف</div>
+        </div>
+      </div>
+      ${reg ? `
+      <div class="emp-region-row">
+        <span style="font-size:.8rem;color:var(--text-muted)">📍 منطقتك:</span>
+        <strong style="font-size:.875rem">${reg.region || '-'}</strong>
+        <span style="color:var(--text-muted);font-size:.8rem">|</span>
+        <strong style="font-size:.875rem">${reg.center || '-'}</strong>
+      </div>` : ''}
+    </div>
+
+  </div>
+
+  <!-- ─── تقويم الأسبوع ─── -->
+  <div class="emp-card emp-card-cal card-interactive" onclick="navigateTo('calendar')">
+    <div class="emp-card-hd">
+      <span class="emp-card-icon" style="background:#E3F2FD">📅</span>
+      <div>
+        <div class="emp-card-title">تقويم ورديتي هذا الأسبوع</div>
+        <div class="emp-card-sub">اضغط لعرض التقويم الكامل</div>
+      </div>
+    </div>
+    ${this._buildWeekCalendar(shift)}
+  </div>
+
+  <!-- ─── صف البطاقات الشخصية ─── -->
+  <div class="emp-cards-grid">
+
+    <!-- البيانات الشخصية -->
+    <div class="emp-card card-interactive" onclick="openEmployeeProfileModal()">
+      <div class="emp-card-hd">
+        <span class="emp-card-icon" style="background:#EDE7F6">🪪</span>
+        <div>
+          <div class="emp-card-title">بياناتي الشخصية</div>
+          <div class="emp-card-sub">اضغط للتعديل</div>
+        </div>
+      </div>
+      <div class="emp-info-list">
+        <div class="emp-info-item">
+          <span class="emp-info-key">📱 الجوال</span>
+          <span dir="ltr">${emp?.phone || 'غير محدد'}</span>
+        </div>
+        <div class="emp-info-item">
+          <span class="emp-info-key">🪪 بطاقة العمل</span>
+          <span class="${getDaysColor(emp?.workCardRemaining)}">${emp?.workCardRemaining !== '' && emp?.workCardRemaining !== undefined ? emp.workCardRemaining + ' يوم' : 'غير محدد'}</span>
+        </div>
+        <div class="emp-info-item">
+          <span class="emp-info-key">📋 بطاقة المصدر</span>
+          <span class="${getDaysColor(emp?.sourceCardRemaining)}">${emp?.sourceCardRemaining !== '' && emp?.sourceCardRemaining !== undefined ? emp.sourceCardRemaining + ' يوم' : 'غير محدد'}</span>
+        </div>
+      </div>
+      <div class="emp-action-btn" style="background:#EDE7F6;color:#6A1B9A">
+        ✏️ تعديل بياناتي
+      </div>
+    </div>
+
+    <!-- الإجازات -->
+    <div class="emp-card">
+      <div class="emp-card-hd">
+        <span class="emp-card-icon" style="background:#E8F5E9">🌴</span>
+        <div>
+          <div class="emp-card-title">إجازاتي</div>
+          <div class="emp-card-sub">
+            ${pendingLeaves > 0
+              ? `<span style="color:#E65100">● ${pendingLeaves} طلب قيد المراجعة</span>`
+              : 'لا توجد طلبات معلقة'}
+          </div>
+        </div>
+      </div>
+      <div class="emp-balance-row">
+        <div class="emp-balance-box" style="background:#E8F5E9">
+          <div style="font-size:1.9rem;font-weight:900;color:#2E7D32">${leave?.systemRemaining ?? 0}</div>
+          <div style="font-size:.72rem;color:#388E3C;font-weight:600">سنوية متبقية</div>
+          <div style="font-size:.68rem;color:#A5D6A7">من ${leave?.systemBalance ?? 0} يوم</div>
+        </div>
+        <div class="emp-balance-box" style="background:#E0F2F1">
+          <div style="font-size:1.6rem;font-weight:800;color:#00897B">${leave?.scheduledRemaining ?? 0}</div>
+          <div style="font-size:.72rem;color:#00897B;font-weight:600">مجدولة متبقية</div>
+          <div style="font-size:.68rem;color:#80CBC4">من ${leave?.scheduledBalance ?? 0} يوم</div>
+        </div>
+      </div>
+      <!-- عرض آخر طلب -->
+      ${reqs.length > 0 ? `
+      <div class="emp-last-req">
+        <span style="font-size:.75rem;color:var(--text-muted)">آخر طلب:</span>
+        <span style="font-size:.78rem;font-weight:600">${reqs[0].leaveType} - ${reqs[0].duration} أيام</span>
+        <span class="emp-status-chip" style="${this._statusStyle(reqs[0].status)}">${reqs[0].status}</span>
+      </div>` : ''}
+      <button class="emp-action-btn" style="background:#E8F5E9;color:#2E7D32;cursor:pointer;border:none;font-family:var(--font);"
+              onclick="openLeaveRequestModal()">
+        ➕ طلب إجازة جديد
+      </button>
+    </div>
+
+    <!-- العمل الإضافي -->
+    <div class="emp-card">
+      <div class="emp-card-hd">
+        <span class="emp-card-icon" style="background:#FFF3E0">⏱️</span>
+        <div>
+          <div class="emp-card-title">عمل إضافي</div>
+          <div class="emp-card-sub">
+            ${pendingOTs > 0
+              ? `<span style="color:#E65100">● ${pendingOTs} طلب في الانتظار</span>`
+              : 'لا توجد طلبات معلقة'}
+          </div>
+        </div>
+      </div>
+      <div class="emp-balance-row">
+        <div class="emp-balance-box" style="background:#FFF3E0">
+          <div style="font-size:1.9rem;font-weight:900;color:#E65100">${totalOTHours.toFixed(1)}</div>
+          <div style="font-size:.72rem;color:#E65100;font-weight:600">ساعة مستلمة</div>
+        </div>
+        <div class="emp-balance-box" style="background:#FBE9E7">
+          <div style="font-size:1.6rem;font-weight:800;color:#BF360C">${ots.length}</div>
+          <div style="font-size:.72rem;color:#BF360C;font-weight:600">إجمالي الطلبات</div>
+        </div>
+      </div>
+      <!-- آخر طلب إضافي -->
+      ${ots.length > 0 ? `
+      <div class="emp-last-req">
+        <span style="font-size:.75rem;color:var(--text-muted)">آخر طلب:</span>
+        <span style="font-size:.78rem;font-weight:600">${ots[0].hours} ساعة - ${ots[0].date}</span>
+        <span class="emp-status-chip" style="${this._statusStyle(ots[0].overallStatus)}">${ots[0].overallStatus}</span>
+      </div>` : ''}
+      <button class="emp-action-btn" style="background:#FFF3E0;color:#E65100;cursor:pointer;border:none;font-family:var(--font);"
+              onclick="openOvertimeFormModal()">
+        ➕ طلب عمل إضافي
+      </button>
+    </div>
+
+    <!-- العدد والمقاسات -->
+    <div class="emp-card card-interactive" onclick="openEquipmentEditModal('${empId}')">
+      <div class="emp-card-hd">
+        <span class="emp-card-icon" style="background:#E8EAF6">🔧</span>
+        <div>
+          <div class="emp-card-title">العدد والمقاسات</div>
+          <div class="emp-card-sub">اضغط للتعديل</div>
+        </div>
+      </div>
+      <div class="emp-eq-grid">
+        ${[['قميص CAT2',eq?.cat2Shirt],['بنطلون CAT2',eq?.cat2Pants],
+           ['سيفتي شوز',eq?.safetyShoes],['بدلة CAT4',eq?.cat4Suit],
+           ['برافو',eq?.bravo],['ميجر',eq?.major]]
+          .map(([l,v]) => `
+          <div class="emp-eq-item">
+            <div class="emp-eq-label">${l}</div>
+            <div class="emp-eq-val">${v || '—'}</div>
+          </div>`).join('')}
+      </div>
+      <div class="emp-action-btn" style="background:#E8EAF6;color:#3949AB">✏️ تعديل</div>
+    </div>
+
+    <!-- المنطقة والمركز -->
+    <div class="emp-card card-interactive" onclick="openRegionEditModal('${empId}')">
+      <div class="emp-card-hd">
+        <span class="emp-card-icon" style="background:#FCE4EC">📍</span>
+        <div>
+          <div class="emp-card-title">المنطقة والمركز</div>
+          <div class="emp-card-sub">اضغط للتعديل</div>
+        </div>
+      </div>
+      <div class="emp-info-list mt-8">
+        <div class="emp-info-item"><span class="emp-info-key">🗺️ المنطقة</span><strong>${reg?.region || 'غير محدد'}</strong></div>
+        <div class="emp-info-item"><span class="emp-info-key">🏢 المركز</span><strong>${reg?.center || 'غير محدد'}</strong></div>
+        <div class="emp-info-item"><span class="emp-info-key">🚗 السيارة</span><strong>${reg?.carNumber || 'غير محدد'}</strong></div>
+      </div>
+      <div class="emp-action-btn" style="background:#FCE4EC;color:#C2185B">✏️ تعديل</div>
+    </div>
+
+    <!-- الإعدادات -->
+    <div class="emp-card card-interactive" onclick="openChangePassModal()">
+      <div class="emp-card-hd">
+        <span class="emp-card-icon" style="background:#E0F7FA">⚙️</span>
+        <div>
+          <div class="emp-card-title">إعداداتي</div>
+          <div class="emp-card-sub">الأمان وكلمة المرور</div>
+        </div>
+      </div>
+      <div class="emp-action-btn" style="background:#E0F7FA;color:#006064;margin-top:16px">
+        🔐 تغيير كلمة المرور
+      </div>
+    </div>
+
+  </div>
+</div>`;
+
+    container.innerHTML = html;
+  },
+
+  // ================================================================
+  // تقويم أسبوعي مصغر (محلي بدون API)
+  // ================================================================
+  _buildWeekCalendar(shift) {
+    const settings = AppState.settings;
+    const refDate  = settings['cycle_reference_date'] ? new Date(settings['cycle_reference_date']) : new Date('2026-05-27');
+    const posKey   = { 'أ': 'shift_a_position', 'ب': 'shift_b_position', 'د': 'shift_d_position', 'ج': 'shift_j_position' }[shift];
+    const refPos   = parseInt(settings[posKey] || '1', 10);
+    const color    = AppState.shiftColors[shift] || '#1565C0';
+    const today    = new Date();
+    today.setHours(0,0,0,0);
+    const wd       = ['أح','إث','ثل','أر','خم','جم','سب'];
+
+    let html = `<div class="mini-week-wrap">`;
+    for (let i = -1; i <= 5; i++) {
+      const d    = new Date(today); d.setDate(today.getDate() + i);
+      const diff = Math.round((d - refDate) / 86400000);
+      const day  = ((refPos - 1 + diff) % 8 + 8) % 8 + 1;
+      const st   = day <= 2 ? 'صباح' : day <= 4 ? 'مساء' : 'راحة';
+      const cls  = { 'صباح': 'mwc-morning', 'مساء': 'mwc-evening', 'راحة': 'mwc-off' }[st];
+      const ico  = { 'صباح': '🌅', 'مساء': '🌙', 'راحة': '🏠' }[st];
+      const isT  = (i === 0);
+
+      html += `
+        <div class="mwc-cell ${cls} ${isT ? 'mwc-today' : ''}" style="${isT ? `box-shadow:0 0 0 2px ${color};` : ''}">
+          <div class="mwc-wd">${wd[d.getDay()]}</div>
+          <div class="mwc-num" style="${isT ? `color:${color};font-size:1.1rem;` : ''}">${d.getDate()}</div>
+          <div class="mwc-ico">${ico}</div>
+          <div class="mwc-st">${st}</div>
+        </div>`;
+    }
+    html += `</div>`;
+    return html;
+  },
+
+  // ================================================================
+  // لوحة المشرف / المدير / التنسيق
+  // ================================================================
+  async _loadElevatedDashboard(role, container) {
     const [statsRes, todayRes, usageRes] = await Promise.all([
       API.getShiftStats(),
       API.getTodayStatus(),
@@ -16,199 +346,107 @@ const Dashboard = {
 
     let html = '';
 
-    // ── إحصائيات الورديات ──
     if (statsRes.success) {
       html += this._buildShiftCards(statsRes.data, todayRes.success ? todayRes.data : {});
     }
 
-    // ── بطاقة الموظف (لوضع الموظف) ──
-    if (role === ROLES.EMPLOYEE) {
-      html += await this._buildEmployeeCard();
-    }
-
-    // ── بطاقة الاستهلاك (المدير) ──
-    if (role === ROLES.MANAGER && usageRes && usageRes.success) {
+    if (role === ROLES.MANAGER && usageRes?.success) {
       html += this._buildUsageCard(usageRes);
     }
 
-    container.innerHTML = html || '<div class="empty-state"><div class="empty-state-icon">🏠</div><div class="empty-state-text">مرحباً بك</div></div>';
-    container.classList.add('anim-slide');
+    container.innerHTML = html || '<div class="empty-state"><div class="empty-state-icon">🏠</div><div class="empty-state-text">مرحباً</div></div>';
 
-    // إضافة التفاعل لبطاقات الورديات
-    container.querySelectorAll('.shift-card[data-shift]').forEach(card => {
-      card.addEventListener('click', () => navigateTo('employees'));
-    });
-
-    // تشغيل شريط الاستهلاك
     if (role === ROLES.MANAGER && usageRes?.success) {
       this._animateQuotaBar(usageRes.today?.percentage || 0);
     }
   },
 
   _buildShiftCards(stats, today) {
-    const settings = AppState.settings;
-    let html = `<div class="section-title">📊 نظرة عامة على الورديات</div>
-                <div class="grid-4 mb-24">`;
-
+    let html = `<div class="section-title">📊 نظرة عامة على الورديات</div><div class="grid-4 mb-24">`;
     SHIFTS.forEach(shift => {
-      const s     = stats[shift] || { total: 0, employees: 0, supervisors: 0 };
+      const s     = stats[shift] || { total:0, employees:0, supervisors:0 };
       const t     = today[shift] || {};
       const color = AppState.shiftColors[shift] || '#1565C0';
-      const statusInfo = { صباح: { label: 'دوام صباحي', icon: '🌅' }, مساء: { label: 'دوام مسائي', icon: '🌙' }, راحة: { label: 'راحة', icon: '🏠' } };
-      const si    = statusInfo[t.status] || { label: '...', icon: '⏳' };
-
+      const si    = { صباح:{l:'دوام صباحي',i:'🌅'}, مساء:{l:'دوام مسائي',i:'🌙'}, راحة:{l:'راحة',i:'🏠'} }[t.status] || {l:'...',i:'⏳'};
       html += `
-        <div class="stat-card card-interactive shift-card" data-shift="${shift}"
-             style="--shift-clr:${color}; border-right-color:${color}">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div style="font-size:1.5rem;font-weight:900;color:${color}">وردية ${shift}</div>
-            <div style="font-size:1.6rem;">${si.icon}</div>
+        <div class="stat-card card-interactive" data-shift="${shift}" style="border-right:4px solid ${color}">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <div style="font-size:1.6rem;font-weight:900;color:${color}">وردية ${shift}</div>
+            <div style="font-size:1.8rem;">${si.i}</div>
           </div>
-          <div style="display:flex;gap:16px;margin-bottom:12px;">
-            <div style="text-align:center;">
-              <div style="font-size:1.8rem;font-weight:900;color:${color}">${s.total}</div>
-              <div style="font-size:.75rem;color:var(--text-muted);">إجمالي</div>
-            </div>
-            <div style="text-align:center;">
-              <div style="font-size:1.4rem;font-weight:700;color:${color}">${s.employees}</div>
-              <div style="font-size:.75rem;color:var(--text-muted);">موظف</div>
-            </div>
-            <div style="text-align:center;">
-              <div style="font-size:1.4rem;font-weight:700;color:${color}">${s.supervisors}</div>
-              <div style="font-size:.75rem;color:var(--text-muted);">مشرف</div>
-            </div>
+          <div style="display:flex;gap:20px;margin-bottom:14px;">
+            <div style="text-align:center;"><div style="font-size:2rem;font-weight:900;color:${color}">${s.total}</div><div style="font-size:.7rem;color:var(--text-muted)">إجمالي</div></div>
+            <div style="text-align:center;"><div style="font-size:1.5rem;font-weight:700;color:${color}">${s.employees}</div><div style="font-size:.7rem;color:var(--text-muted)">موظف</div></div>
+            <div style="text-align:center;"><div style="font-size:1.5rem;font-weight:700;color:${color}">${s.supervisors}</div><div style="font-size:.7rem;color:var(--text-muted)">مشرف</div></div>
           </div>
-          <div style="background:${color}15;border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px;">
-            <span style="font-size:.85rem;color:${color};font-weight:700;">${si.label}</span>
+          <div style="background:${color}12;border-radius:8px;padding:8px 12px;">
+            <span style="font-size:.875rem;color:${color};font-weight:700;">${si.l}</span>
           </div>
         </div>`;
     });
-
     html += `</div>`;
     return html;
   },
 
-  async _buildEmployeeCard() {
-    const empRes = await API.getEmployee(Auth.getEmployeeId());
-    if (!empRes.success) return '';
-
-    const emp      = empRes.data;
-    const leavRes  = await API.getLeaves();
-    const leave    = leavRes.success && leavRes.data.length > 0 ? leavRes.data[0] : null;
-    const color    = AppState.shiftColors[emp.shift] || '#1565C0';
-
-    return `
-      <div class="section-title">👤 بياناتي</div>
-      <div class="grid-3 mb-24">
-        <div class="card">
-          <div class="card-title" style="margin-bottom:16px;"><span class="card-title-icon">👤</span>معلومات شخصية</div>
-          <div style="display:flex;flex-direction:column;gap:10px;">
-            <div><span class="text-muted text-small">الاسم: </span><strong>${emp.fullName}</strong></div>
-            <div><span class="text-muted text-small">الرقم الوظيفي: </span><strong>${emp.employeeId}</strong></div>
-            <div><span class="text-muted text-small">الجوال: </span><strong>${emp.phone || '-'}</strong></div>
-            <div><span class="text-muted text-small">الوردية: </span>${getShiftBadge(emp.shift)}</div>
-          </div>
-          <button class="btn btn-outline btn-sm mt-16 w-100" onclick="openEmployeeProfileModal()">✏️ تعديل بياناتي</button>
-        </div>
-
-        <div class="card">
-          <div class="card-title" style="margin-bottom:16px;"><span class="card-title-icon">🪪</span>البطاقات</div>
-          <div style="display:flex;flex-direction:column;gap:12px;">
-            <div>
-              <div class="text-small text-muted mb-8">بطاقة العمل</div>
-              <div>${emp.workCardExpiry ? formatDate(emp.workCardExpiry) : 'غير محدد'}</div>
-              <div class="mt-8">${getDaysCell(emp.workCardRemaining)}</div>
-            </div>
-            <hr class="divider">
-            <div>
-              <div class="text-small text-muted mb-8">بطاقة المصدر/المستلم</div>
-              <div>${emp.sourceCardExpiry ? formatDate(emp.sourceCardExpiry) : 'غير محدد'}</div>
-              <div class="mt-8">${getDaysCell(emp.sourceCardRemaining)}</div>
-            </div>
-          </div>
-        </div>
-
-        ${leave ? `
-        <div class="card">
-          <div class="card-title" style="margin-bottom:16px;"><span class="card-title-icon">🌴</span>رصيد الإجازات</div>
-          <div style="display:flex;flex-direction:column;gap:12px;">
-            <div>
-              <div class="text-small text-muted">إجازة سنوية</div>
-              <div style="font-size:1.8rem;font-weight:900;color:var(--primary)">${leave.systemRemaining}</div>
-              <div class="text-small text-muted">من أصل ${leave.systemBalance} يوم</div>
-            </div>
-            ${leave.scheduledBalance > 0 ? `
-            <hr class="divider">
-            <div>
-              <div class="text-small text-muted">مجدولة</div>
-              <div style="font-size:1.4rem;font-weight:700;color:var(--accent)">${leave.scheduledRemaining}</div>
-              <div class="text-small text-muted">من أصل ${leave.scheduledBalance} يوم</div>
-            </div>` : ''}
-          </div>
-          <button class="btn btn-primary btn-sm mt-16 w-100" onclick="navigateTo('leaves')">📋 طلب إجازة</button>
-        </div>` : ''}
-      </div>`;
-  },
-
   _buildUsageCard(usageRes) {
-    const today   = usageRes.today || { count: 0, percentage: 0 };
+    const today   = usageRes.today || { count:0, percentage:0 };
     const history = usageRes.history || [];
     const quota   = usageRes.dailyQuota || 20000;
     const pct     = today.percentage || 0;
+    const bc      = pct>=95?'red':pct>=75?'orange':pct>=60?'yellow':'green';
 
-    const barClass = pct >= 95 ? 'red' : pct >= 75 ? 'orange' : pct >= 60 ? 'yellow' : 'green';
-    const empCount = 0; // يُحدَّث لاحقاً
-
-    let historyHtml = '';
-    history.slice(0, 7).forEach(d => {
-      const p     = d.percentage;
-      const bc    = p >= 95 ? 'red' : p >= 75 ? 'orange' : p >= 60 ? 'yellow' : 'green';
-      historyHtml += `
-        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;">
-          <div style="font-size:.7rem;color:var(--text-muted);">${d.weekDay.substring(0,3)}</div>
-          <div style="height:60px;width:100%;background:var(--surface2);border-radius:6px;position:relative;overflow:hidden;">
-            <div class="quota-bar ${bc}" style="position:absolute;bottom:0;height:${Math.min(p,100)}%;width:100%;border-radius:6px;"></div>
-          </div>
-          <div style="font-size:.65rem;color:var(--text-muted);">${p}%</div>
-        </div>`;
-    });
+    const bars = history.slice(0,7).map(d => {
+      const p  = d.percentage;
+      const c  = p>=95?'red':p>=75?'orange':p>=60?'yellow':'green';
+      return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;">
+        <div style="font-size:.65rem;color:var(--text-muted);">${d.weekDay.substring(0,3)}</div>
+        <div style="height:60px;width:100%;background:var(--surface2);border-radius:6px;position:relative;overflow:hidden;">
+          <div class="quota-bar ${c}" style="position:absolute;bottom:0;height:${Math.min(p,100)}%;width:100%;border-radius:6px;"></div>
+        </div>
+        <div style="font-size:.65rem;color:var(--text-muted);">${p}%</div>
+      </div>`;
+    }).join('');
 
     return `
       <div class="section-title">📈 بطاقة الاستهلاك</div>
       <div class="card mb-24">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:20px;">
           <div>
-            <div style="font-size:.875rem;color:var(--text-muted);margin-bottom:8px;">اليوم: ${today.date || '-'}</div>
-            <div style="font-size:2.5rem;font-weight:900;color:var(--primary);">${today.count || 0}</div>
-            <div style="font-size:.875rem;color:var(--text-muted);">من أصل ${quota.toLocaleString()} طلب/يوم</div>
+            <div style="font-size:.85rem;color:var(--text-muted);margin-bottom:6px;">اليوم: ${today.date||'-'}</div>
+            <div style="font-size:2.4rem;font-weight:900;color:var(--primary)">${today.count||0}</div>
+            <div style="font-size:.85rem;color:var(--text-muted);">من ${quota.toLocaleString()} طلب/يوم</div>
           </div>
           <div>
-            <div style="font-size:.875rem;color:var(--text-muted);margin-bottom:12px;">نسبة الاستهلاك</div>
-            <div class="quota-bar-wrap" style="margin-bottom:8px;">
-              <div id="quotaBar" class="quota-bar ${barClass}" style="width:0%"></div>
-            </div>
-            <div style="font-size:1.4rem;font-weight:800;color:var(--${barClass === 'green' ? 'success' : barClass === 'red' ? 'danger' : 'warning'})">${pct}%</div>
+            <div style="font-size:.85rem;color:var(--text-muted);margin-bottom:10px;">نسبة الاستهلاك</div>
+            <div class="quota-bar-wrap" style="margin-bottom:8px;"><div id="quotaBar" class="quota-bar ${bc}" style="width:0%"></div></div>
+            <div style="font-size:1.5rem;font-weight:800;">${pct}%</div>
           </div>
         </div>
-
-        <div style="border-top:1px solid var(--border);padding-top:16px;margin-bottom:8px;">
-          <div style="font-size:.875rem;color:var(--text-muted);margin-bottom:12px;font-weight:600;">آخر 7 أيام</div>
-          <div style="display:flex;gap:8px;align-items:flex-end;">${historyHtml}</div>
-        </div>
-
-        <div style="margin-top:16px;padding:12px;background:var(--gradient-soft);border-radius:var(--radius);font-size:.8rem;color:var(--text-muted);">
-          من 0 إلى 60% <span style="color:#2E7D32;font-weight:700;">طبيعي ●</span>
-          &nbsp;&nbsp;61-75% <span style="color:#F9A825;font-weight:700;">تنبيه ●</span>
-          &nbsp;&nbsp;76-95% <span style="color:#F57C00;font-weight:700;">تحذير ●</span>
-          &nbsp;&nbsp;96-100% <span style="color:#C62828;font-weight:700;">حرج ●</span>
+        <div style="border-top:1px solid var(--border);padding-top:14px;">
+          <div style="font-size:.85rem;color:var(--text-muted);margin-bottom:10px;font-weight:700;">آخر 7 أيام</div>
+          <div style="display:flex;gap:8px;align-items:flex-end;">${bars}</div>
         </div>
       </div>`;
   },
 
   _animateQuotaBar(pct) {
-    setTimeout(() => {
-      const bar = document.getElementById('quotaBar');
-      if (bar) bar.style.width = Math.min(pct, 100) + '%';
-    }, 300);
+    setTimeout(() => { const b=document.getElementById('quotaBar'); if(b) b.style.width=Math.min(pct,100)+'%'; }, 350);
+  },
+
+  // ── مساعد ألوان الحالة ──
+  _statusStyle(status) {
+    const m = {
+      'قيد المراجعة':    'background:#E8EAF6;color:#283593',
+      'موافق عليها':      'background:#E8F5E9;color:#2E7D32',
+      'مرفوضة':           'background:#FFEBEE;color:#C62828',
+      'تم الانشاء':       'background:#E3F2FD;color:#1565C0',
+      'موافقة المشرف':    'background:#E8F5E9;color:#2E7D32',
+      'مرفوض من المشرف':  'background:#FFEBEE;color:#C62828',
+      'ارسل الي التنسيق': 'background:#FFF3E0;color:#E65100',
+      'ارسل في النظام':   'background:#F3E5F5;color:#6A1B9A',
+      'تم الاستلام':      'background:#E0F7FA;color:#006064',
+      'لم يتم الاستلام':  'background:#FCE4EC;color:#880E4F',
+    };
+    return m[status] || 'background:#eee;color:#333';
   }
 };
