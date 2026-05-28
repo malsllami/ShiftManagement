@@ -13,77 +13,71 @@
 <body>
 
 <!-- ================================================================
-     صفحة تسجيل الدخول
+     صفحة تسجيل الدخول (تحتوي على نموذجَي الدخول وتغيير المرور)
      ================================================================ -->
 <div id="loginPage">
   <div class="login-card">
     <div class="login-logo">
       <img src="img/logo.png" alt="السعودية للطاقة" onerror="this.style.display='none'">
-      <h1>إدارة الورديات</h1>
-      <p>السعودية للطاقة</p>
+      <h1 id="loginCardTitle">إدارة الورديات</h1>
+      <p id="loginCardSub">السعودية للطاقة</p>
     </div>
 
-    <form onsubmit="handleLogin(event)">
-      <div class="login-field">
-        <label>الرقم الوظيفي</label>
-        <input type="text" id="loginId" class="login-input"
-               placeholder="أدخل رقمك الوظيفي"
-               autocomplete="username" inputmode="numeric">
+    <!-- ── نموذج الدخول ── -->
+    <div id="loginFormSection">
+      <form onsubmit="handleLogin(event)">
+        <div class="login-field">
+          <label>الرقم الوظيفي</label>
+          <input type="text" id="loginId" class="login-input"
+                 placeholder="أدخل رقمك الوظيفي"
+                 autocomplete="username" inputmode="numeric">
+        </div>
+        <div class="login-field">
+          <label>كلمة المرور</label>
+          <input type="password" id="loginPass" class="login-input"
+                 placeholder="كلمة المرور"
+                 autocomplete="current-password">
+        </div>
+        <div id="loginError" class="form-error"></div>
+        <button type="submit" id="loginBtn" class="btn-login">
+          🔐 تسجيل الدخول
+        </button>
+      </form>
+    </div>
+
+    <!-- ── نموذج تغيير المرور (يظهر بدلاً من الدخول) ── -->
+    <div id="changePassSection" style="display:none;">
+      <div id="changePassForcedNote"
+           style="background:rgba(255,212,79,.18);border:1px solid rgba(255,212,79,.4);
+                  border-radius:10px;padding:10px 14px;margin-bottom:18px;
+                  color:#FFD54F;font-size:.875rem;text-align:center;display:none;">
+        ⚠️ يجب تغيير كلمة المرور الافتراضية قبل المتابعة
       </div>
-
       <div class="login-field">
-        <label>كلمة المرور</label>
-        <input type="password" id="loginPass" class="login-input"
-               placeholder="كلمة المرور"
-               autocomplete="current-password">
+        <label>كلمة المرور الحالية</label>
+        <input type="password" id="oldPassInput" class="login-input" placeholder="كلمة المرور الحالية">
       </div>
-
-      <div id="loginError" class="form-error"></div>
-
-      <button type="submit" id="loginBtn" class="btn-login">
-        🔐 تسجيل الدخول
+      <div class="login-field">
+        <label>كلمة المرور الجديدة <span style="opacity:.7;font-size:.75rem;">(6 أحرف كحد أدنى)</span></label>
+        <input type="password" id="newPassInput" class="login-input" placeholder="كلمة المرور الجديدة">
+      </div>
+      <div class="login-field">
+        <label>تأكيد كلمة المرور</label>
+        <input type="password" id="confPassInput" class="login-input" placeholder="تأكيد كلمة المرور">
+      </div>
+      <button id="changePassBtn" class="btn-login" onclick="handleChangePassword(true)">
+        💾 تغيير كلمة المرور
       </button>
-    </form>
+      <button id="changePassSkipBtn" class="btn-login hidden"
+              style="background:transparent;border:1px solid rgba(255,255,255,.3);margin-top:10px;"
+              onclick="hideChangePasswordPage(); initApp()">
+        تخطي
+      </button>
+    </div>
 
-    <p style="text-align:center;color:rgba(255,255,255,.6);font-size:.75rem;margin-top:20px;">
+    <p style="text-align:center;color:rgba(255,255,255,.5);font-size:.72rem;margin-top:20px;">
       © 2026 السعودية للطاقة - إدارة الورديات
     </p>
-  </div>
-</div>
-
-<!-- ================================================================
-     صفحة تغيير كلمة المرور (إجبارية)
-     ================================================================ -->
-<div id="changePassPage">
-  <div class="login-card">
-    <div class="login-logo">
-      <h1 id="changePassTitle">تغيير كلمة المرور</h1>
-      <p id="changePassForcedNote" class="hidden" style="color:#FFD54F;">
-        ⚠️ يجب تغيير كلمة المرور الافتراضية قبل المتابعة
-      </p>
-    </div>
-
-    <div class="login-field">
-      <label>كلمة المرور الحالية</label>
-      <input type="password" id="oldPassInput" class="login-input" placeholder="كلمة المرور الحالية">
-    </div>
-    <div class="login-field">
-      <label>كلمة المرور الجديدة (6 أحرف كحد أدنى)</label>
-      <input type="password" id="newPassInput" class="login-input" placeholder="كلمة المرور الجديدة">
-    </div>
-    <div class="login-field">
-      <label>تأكيد كلمة المرور</label>
-      <input type="password" id="confPassInput" class="login-input" placeholder="تأكيد كلمة المرور">
-    </div>
-
-    <button id="changePassBtn" class="btn-login" onclick="handleChangePassword(true)">
-      💾 تغيير كلمة المرور
-    </button>
-    <button id="changePassSkipBtn" class="btn-login hidden"
-            style="background:transparent;border:1px solid rgba(255,255,255,.4);margin-top:10px;"
-            onclick="hideChangePasswordPage(); navigateTo('dashboard')">
-      تخطي
-    </button>
   </div>
 </div>
 
