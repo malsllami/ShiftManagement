@@ -110,13 +110,44 @@ function debounce(fn, delay = 600) {
   };
 }
 
-// منع الضغط المزدوج على الأزرار
-function lockButton(btn, ms = 2000) {
-  if (!btn) return;
+// ── زر يتحول إلى دائرة عند التحميل ──
+function lockButton(btn, ms = 3500) {
+  if (!btn || btn.disabled) return;
+
   btn.disabled = true;
-  btn.classList.add('loading');
-  setTimeout(() => {
+  const savedHTML  = btn.innerHTML;
+  const savedStyle = btn.getAttribute('style') || '';
+  const w          = btn.offsetWidth;
+
+  // ثبّت العرض ثم انتقل للدائرة
+  btn.style.cssText = `min-width:0;width:${w}px;overflow:hidden;transition:width .28s cubic-bezier(.4,0,.2,1),border-radius .28s cubic-bezier(.4,0,.2,1);`;
+  btn.innerHTML     = '';
+
+  // جبر reflow
+  void btn.offsetWidth;
+
+  btn.style.width        = '44px';
+  btn.style.borderRadius = '50%';
+  btn.classList.add('btn-spinning');
+
+  const ring = document.createElement('span');
+  ring.className = 'spin-ring';
+  btn.appendChild(ring);
+
+  const restore = () => {
     btn.disabled = false;
-    btn.classList.remove('loading');
-  }, ms);
+    btn.setAttribute('style', savedStyle);
+    btn.classList.remove('btn-spinning');
+    btn.innerHTML = savedHTML;
+  };
+
+  btn._restoreTimer = setTimeout(restore, ms);
+  btn._restore = restore;
+}
+
+// استعادة فورية للزر (عند نجاح/فشل العملية)
+function unlockButton(btn) {
+  if (!btn) return;
+  clearTimeout(btn._restoreTimer);
+  btn._restore?.();
 }
