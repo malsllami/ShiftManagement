@@ -26,7 +26,7 @@ const Dashboard = {
     const shift = Auth.getShift();
 
     // جلب جميع البيانات بالتوازي
-    const [empRes, leavesRes, leaveReqRes, otRes, regRes, eqRes, statsRes, todayRes] =
+    const [empRes, leavesRes, leaveReqRes, otRes, regRes, eqRes, todayRes] =
       await Promise.all([
         API.getEmployee(empId),
         API.getLeaves(),
@@ -34,7 +34,6 @@ const Dashboard = {
         API.getOvertime(),
         API.getRegions(),
         API.getEquipment(),
-        API.getShiftStats(),
         API.getTodayStatus()
       ]);
 
@@ -44,9 +43,7 @@ const Dashboard = {
     const ots   = otRes.success       ? otRes.data        : [];
     const reg   = regRes.success  && regRes.data[0]  ? regRes.data[0]  : null;
     const eq    = eqRes.success   && eqRes.data[0]   ? eqRes.data[0]   : null;
-    const stat  = statsRes.success ? (statsRes.data[shift] || {}) : {};
     const today = todayRes.success ? (todayRes.data[shift] || {}) : {};
-    const color = AppState.shiftColors[shift] || '#1565C0';
 
     const pendingLeaves = reqs.filter(r => r.status === 'قيد المراجعة').length;
     const pendingOTs    = ots.filter(o => o.overallStatus === 'تم الانشاء' || o.overallStatus === 'ارسل في النظام' && o.receiptStatus !== 'تم الاستلام').length;
@@ -54,74 +51,17 @@ const Dashboard = {
                              .reduce((s, o) => s + (Number(o.hours) || 0), 0);
 
     const statusInfo = {
-      'صباح': { label: 'دوام صباحي', icon: '🌅', bg: '#E3F2FD', col: '#1565C0' },
-      'مساء': { label: 'دوام مسائي', icon: '🌙', bg: '#FFF3E0', col: '#E65100' },
-      'راحة': { label: 'يوم راحة',   icon: '🏠', bg: '#F3E5F5', col: '#6A1B9A' }
+      'صباح': { label: 'دوام صباحي', icon: '🌅', col: '#1565C0' },
+      'مساء': { label: 'دوام مسائي', icon: '🌙', col: '#E65100' },
+      'راحة': { label: 'يوم راحة',   icon: '🏠', col: '#6A1B9A' }
     };
-    const si = statusInfo[today.status] || { label: '---', icon: '⏳', bg: '#f5f5f5', col: '#999' };
+    const si = statusInfo[today.status] || { label: '---', icon: '⏳', col: '#999' };
+
+    // تحديث الهيدر بحالة اليوم
+    updateHeaderStatus(si.icon, si.label, si.col);
 
     const html = `
 <div class="emp-dashboard">
-
-  <!-- ─── ترحيب + بطاقة الوردية ─── -->
-  <div class="emp-top-row">
-
-    <!-- ترحيب -->
-    <div class="emp-welcome-card" style="border-right:4px solid ${color}">
-      <div class="emp-welcome-left">
-        <div class="emp-avatar" style="background:${color}18;color:${color}">
-          ${(emp?.fullName || Auth.getFullName()).charAt(0)}
-        </div>
-        <div>
-          <div style="font-size:1.1rem;font-weight:800;color:var(--text)">
-            أهلاً، ${emp?.fullName || Auth.getFullName()}
-          </div>
-          <div style="font-size:.82rem;color:var(--text-muted);margin-top:2px">
-            الرقم الوظيفي: <strong>${empId}</strong>
-          </div>
-        </div>
-      </div>
-      <div class="emp-shift-chip" style="border:2px solid ${color}20;background:${color}0a">
-        <div style="font-size:1.4rem;font-weight:900;color:${color}">وردية ${shift}</div>
-        <div class="emp-status-pill" style="background:${si.bg};color:${si.col}">
-          ${si.icon} ${si.label}
-        </div>
-      </div>
-    </div>
-
-    <!-- إحصاء الوردية: عدد + مناطق/مراكز فقط -->
-    <div class="emp-shift-stat-card" style="border-top:4px solid ${color}">
-      <div class="emp-card-hd">
-        <span class="emp-card-icon" style="background:${color}15">👥</span>
-        <div>
-          <div class="emp-card-title">أعضاء وردية ${shift}</div>
-          <div class="emp-card-sub">عدد الموظفين في ورديتك</div>
-        </div>
-      </div>
-      <div class="emp-count-row">
-        <div class="emp-count-box" style="border-color:${color}30">
-          <div style="font-size:2.2rem;font-weight:900;color:${color}">${stat.total || 0}</div>
-          <div class="emp-count-lbl">إجمالي</div>
-        </div>
-        <div class="emp-count-box" style="border-color:${color}30">
-          <div style="font-size:1.6rem;font-weight:700;color:${color}">${stat.employees || 0}</div>
-          <div class="emp-count-lbl">موظف</div>
-        </div>
-        <div class="emp-count-box" style="border-color:${color}30">
-          <div style="font-size:1.6rem;font-weight:700;color:${color}">${stat.supervisors || 0}</div>
-          <div class="emp-count-lbl">مشرف</div>
-        </div>
-      </div>
-      ${reg ? `
-      <div class="emp-region-row">
-        <span style="font-size:.8rem;color:var(--text-muted)">📍 منطقتك:</span>
-        <strong style="font-size:.875rem">${reg.region || '-'}</strong>
-        <span style="color:var(--text-muted);font-size:.8rem">|</span>
-        <strong style="font-size:.875rem">${reg.center || '-'}</strong>
-      </div>` : ''}
-    </div>
-
-  </div>
 
   <!-- ─── تقويم الأسبوع ─── -->
   <div class="emp-card emp-card-cal card-interactive" onclick="navigateTo('calendar')">
