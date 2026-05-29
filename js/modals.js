@@ -264,29 +264,63 @@ async function openLeaveRequestModal() {
   }
 }
 
-async function lvCalcDuration() {
+function lvCalcDuration() {
   const start = document.getElementById('lvStartDate').value;
   const end   = document.getElementById('lvEndDate').value;
   if (!start || !end) return;
 
-  const dur  = daysDiff(start, end);
+  const dur = daysDiff(start, end);
   document.getElementById('lvDuration').textContent = dur + ' أيام';
 
-  // عرض التقويم المصغر
+  // ── حساب التقويم محلياً (بدون API) ──
   const session  = Auth.getSession();
-  const calRes   = await API.getShiftCalendarRange(session.shift, start, end);
-  if (calRes.success) {
-    let calHtml = `<div class="mini-calendar">
-      <div class="mini-cal-header">حالة الوردية أثناء الإجازة</div>
-      <div class="mini-cal-body">`;
-    calRes.data.forEach(d => {
-      calHtml += `<div class="mini-cal-day ${d.status}">
-        ${d.date.split('-')[2]}<br><small>${d.status}</small>
-      </div>`;
-    });
-    calHtml += `</div></div>`;
-    document.getElementById('lvMiniCal').innerHTML = calHtml;
+  const shift    = session.shift;
+  const settings = AppState.settings || {};
+  const refDate  = new Date(settings['cycle_reference_date'] || '2026-05-27');
+  refDate.setHours(0,0,0,0);
+  const posKey = { 'أ': 'shift_a_position', 'ب': 'shift_b_position',
+                   'د': 'shift_d_position', 'ج': 'shift_j_position' }[shift];
+  const refPos = parseInt(settings[posKey] || '1', 10);
+  const color  = AppState.shiftColors[shift] || '#1565C0';
+
+  const WD    = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  const icons = { 'صباح': '☀️', 'مساء': '🌙', 'راحة': '🏖️' };
+  const bgs   = { 'صباح': '#E3F2FD', 'مساء': '#FFF3E0', 'راحة': '#F3E5F5' };
+  const fgs   = { 'صباح': '#1565C0', 'مساء': '#E65100', 'راحة': '#6A1B9A' };
+
+  const days = [];
+  let cur = new Date(start); cur.setHours(0,0,0,0);
+  const endD = new Date(end); endD.setHours(0,0,0,0);
+  while (cur <= endD) {
+    const diff   = Math.round((cur - refDate) / 86400000);
+    const dayPos = ((refPos - 1 + diff) % 8 + 8) % 8 + 1;
+    const status = dayPos <= 2 ? 'صباح' : dayPos <= 4 ? 'مساء' : 'راحة';
+    let hijri = '';
+    try { hijri = cur.toLocaleDateString('ar-SA-u-ca-islamic', { day: 'numeric', month: 'long' }); } catch(e) {}
+    days.push({ weekDay: WD[cur.getDay()], dayNum: cur.getDate(), hijri, status });
+    cur.setDate(cur.getDate() + 1);
   }
+
+  let calHtml = `
+    <div style="font-size:.78rem;font-weight:700;color:var(--text-muted);margin-bottom:8px;">
+      📅 حالة وردية ${shift} خلال الإجازة
+    </div>
+    <div class="lv-cal-wrap">`;
+
+  days.forEach(d => {
+    calHtml += `
+      <div class="lv-cal-card" style="border-top:3px solid ${fgs[d.status]};">
+        <div class="lv-cal-wd">${d.weekDay}</div>
+        <div class="lv-cal-num" style="color:${fgs[d.status]}">${d.dayNum}</div>
+        ${d.hijri ? `<div class="lv-cal-hijri">${d.hijri}</div>` : ''}
+        <div class="lv-cal-status" style="background:${bgs[d.status]};color:${fgs[d.status]};">
+          ${icons[d.status]} ${d.status}
+        </div>
+      </div>`;
+  });
+
+  calHtml += `</div>`;
+  document.getElementById('lvMiniCal').innerHTML = calHtml;
 
   // عرض رصيد الإجازة
   const type    = document.getElementById('lvType').value;
@@ -295,8 +329,10 @@ async function lvCalcDuration() {
     const avail = type === 'سنوية' ? balance.systemRemaining : balance.scheduledRemaining;
     const warn  = dur > avail;
     document.getElementById('lvBalanceInfo').innerHTML =
-      `<div style="padding:10px;border-radius:8px;background:${warn?'#FFEBEE':'#E8F5E9'};color:${warn?'#C62828':'#2E7D32'};font-weight:600;">
-        ${warn ? '⚠️ تحذير: الرصيد غير كافٍ (' : '✅ الرصيد المتاح: '}${avail} يوم${warn ? ' متبقٍ' : ''}
+      `<div style="padding:10px;border-radius:var(--radius);
+                   background:${warn?'#FFF3E0':'#E8F5E9'};
+                   color:${warn?'#E65100':'#2E7D32'};font-weight:600;font-size:.85rem;">
+        ${warn ? '⚠️ تحذير: الرصيد غير كافٍ — المتاح:' : '✅ الرصيد المتاح:'} ${avail} يوم
       </div>`;
   }
 }
