@@ -110,6 +110,22 @@ function debounce(fn, delay = 600) {
   };
 }
 
+// ── تحويل الأرقام العربية تلقائياً عند الكتابة ──
+document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('input', e => {
+    const el = e.target;
+    if (!el.matches('input, textarea')) return;
+    const type = el.type || '';
+    if (['checkbox','radio','date','color','range','file'].includes(type)) return;
+    // تطبيق التحويل فقط إذا وُجدت أرقام عربية
+    if (/[٠١٢٣٤٥٦٧٨٩]/.test(el.value)) {
+      const pos = el.selectionStart;
+      el.value  = normalizeNumbers(el.value);
+      try { el.setSelectionRange(pos, pos); } catch(e) {}
+    }
+  });
+});
+
 // ── زر يتحول إلى دائرة كاملة عند التحميل ──
 function lockButton(btn, ms = 3500) {
   if (!btn || btn.disabled) return;
