@@ -423,7 +423,7 @@ const OverviewPage = {
     this._allData = res.data;
   },
 
-  // ── بطاقة البيانات الشاملة للموظف ──
+  // ── بطاقة البيانات الشاملة الموحّدة للموظف ──
   async _loadEmployeeCard(container) {
     container.innerHTML = `<div class="spinner"></div>`;
     const empId = Auth.getEmployeeId();
@@ -437,90 +437,89 @@ const OverviewPage = {
       API.getEquipment()
     ]);
 
-    const emp  = empRes.success   && empRes.data       ? empRes.data       : {};
-    const lv   = leavesRes.success && leavesRes.data[0] ? leavesRes.data[0] : {};
-    const reg  = regRes.success   && regRes.data[0]    ? regRes.data[0]    : {};
-    const eq   = eqRes.success    && eqRes.data[0]     ? eqRes.data[0]     : {};
+    const emp = empRes.success   && empRes.data       ? empRes.data       : {};
+    const lv  = leavesRes.success && leavesRes.data[0] ? leavesRes.data[0] : {};
+    const reg = regRes.success   && regRes.data[0]    ? regRes.data[0]    : {};
+    const eq  = eqRes.success    && eqRes.data[0]     ? eqRes.data[0]     : {};
 
-    const infoRow = (key, val, cls) =>
-      `<div class="emp-info-item">
-        <span class="emp-info-key">${key}</span>
-        <span ${cls ? `class="${cls}"` : ''}>${val || '-'}</span>
+    const row = (icon, label, val, cls) => `
+      <div class="ov-row">
+        <span class="ov-key">${icon} ${label}</span>
+        <span ${cls ? `class="${cls}"` : ''}>${val || '<span class="text-muted">—</span>'}</span>
       </div>`;
+
+    const sep = (title, icon) => `
+      <div class="ov-sep"><span>${icon} ${title}</span></div>`;
 
     container.innerHTML = `
       <div class="section-title">📊 بياناتي الشاملة</div>
-      <div style="max-width:700px;margin:0 auto;">
+      <div style="max-width:640px;margin:0 auto;">
+        <div class="emp-card" style="border-right:4px solid ${color};padding:20px;">
 
-        <!-- ── هوية ── -->
-        <div class="emp-card mb-16" style="border-right:4px solid ${color}">
-          <div class="emp-card-hd">
-            <span class="emp-card-icon" style="background:${color}15;color:${color};font-size:1.4rem;font-weight:900;">
-              ${(emp.fullName || Auth.getFullName() || '').charAt(0)}
-            </span>
-            <div>
-              <div style="font-size:1.05rem;font-weight:800;">${emp.fullName || Auth.getFullName()}</div>
-              <div style="font-size:.8rem;color:var(--text-muted);">الرقم الوظيفي: <strong>${empId}</strong></div>
+          <!-- ─── رأس البطاقة ─── -->
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;
+                      padding-bottom:14px;border-bottom:1px solid var(--border);">
+            <div style="width:48px;height:48px;border-radius:50%;flex-shrink:0;
+                        background:${color}18;color:${color};
+                        display:flex;align-items:center;justify-content:center;
+                        font-size:1.5rem;font-weight:900;">
+              ${(emp.fullName || Auth.getFullName() || '?').charAt(0)}
             </div>
-            <div style="margin-right:auto;">${getShiftBadge(shift)} ${getRoleBadge(emp.role || Auth.getRole())}</div>
-          </div>
-          <div class="emp-info-list mt-8">
-            ${infoRow('📱 الجوال', `<span dir="ltr">${emp.phone || '-'}</span>`)}
-            ${infoRow('📍 المنطقة', reg.region)}
-            ${infoRow('🏢 المركز', reg.center)}
-            ${infoRow('🚗 السيارة', reg.carNumber)}
-          </div>
-        </div>
-
-        <!-- ── بطاقات الهوية ── -->
-        <div class="emp-card mb-16">
-          <div class="emp-card-hd"><span class="emp-card-icon" style="background:#EDE7F6">🪪</span>
-            <div><div class="emp-card-title">بطاقات الهوية</div></div>
-          </div>
-          <div class="emp-info-list">
-            ${infoRow('🪪 بطاقة العمل (انتهاء)', emp.workCardExpiry || '-')}
-            ${infoRow('⏳ المتبقي', emp.workCardRemaining !== undefined && emp.workCardRemaining !== '' ? emp.workCardRemaining + ' يوم' : '-', getDaysColor(emp.workCardRemaining))}
-            ${infoRow('📋 بطاقة المصدر (انتهاء)', emp.sourceCardExpiry || '-')}
-            ${infoRow('⏳ المتبقي', emp.sourceCardRemaining !== undefined && emp.sourceCardRemaining !== '' ? emp.sourceCardRemaining + ' يوم' : '-', getDaysColor(emp.sourceCardRemaining))}
-          </div>
-        </div>
-
-        <!-- ── الإجازات ── -->
-        <div class="emp-card mb-16">
-          <div class="emp-card-hd"><span class="emp-card-icon" style="background:#E8F5E9">🌴</span>
-            <div><div class="emp-card-title">رصيد الإجازات</div></div>
-          </div>
-          <div class="emp-balance-row" style="margin-top:12px;">
-            <div class="emp-balance-box" style="background:#E8F5E9">
-              <div style="font-size:1.9rem;font-weight:900;color:#2E7D32">${lv.systemRemaining ?? '-'}</div>
-              <div style="font-size:.72rem;color:#388E3C;font-weight:600">سنوية متبقية</div>
-              <div style="font-size:.68rem;color:#A5D6A7">من ${lv.systemBalance ?? '-'} يوم</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:1.05rem;font-weight:800;color:var(--text);">
+                ${emp.fullName || Auth.getFullName()}
+              </div>
+              <div style="font-size:.75rem;color:var(--text-muted);">الرقم: <strong>${empId}</strong></div>
             </div>
-            <div class="emp-balance-box" style="background:#E0F2F1">
-              <div style="font-size:1.6rem;font-weight:800;color:#00897B">${lv.scheduledRemaining ?? '-'}</div>
-              <div style="font-size:.72rem;color:#00897B;font-weight:600">مجدولة متبقية</div>
-              <div style="font-size:.68rem;color:#80CBC4">من ${lv.scheduledBalance ?? '-'} يوم</div>
+            <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+              ${getShiftBadge(shift)}
+              ${getRoleBadge(emp.role || Auth.getRole())}
             </div>
           </div>
-        </div>
 
-        <!-- ── العدد والمقاسات ── -->
-        <div class="emp-card">
-          <div class="emp-card-hd"><span class="emp-card-icon" style="background:#E8EAF6">🔧</span>
-            <div><div class="emp-card-title">العدد والمقاسات</div></div>
+          <!-- ─── بيانات التواصل والموقع ─── -->
+          ${sep('التواصل والموقع', '📍')}
+          ${row('📱','الجوال', emp.phone ? `<span dir="ltr">${emp.phone}</span>` : null)}
+          ${row('🗺️','المنطقة', reg.region)}
+          ${row('🏢','المركز', reg.center)}
+          ${row('🚗','السيارة', reg.carNumber)}
+
+          <!-- ─── بطاقات الهوية ─── -->
+          ${sep('بطاقات الهوية', '🪪')}
+          ${row('🪪','بطاقة العمل — تاريخ الانتهاء', emp.workCardExpiry ? formatDate(emp.workCardExpiry) : null)}
+          ${row('⏳','المتبقي', emp.workCardRemaining !== undefined && emp.workCardRemaining !== '' ? emp.workCardRemaining + ' يوم' : null, getDaysColor(emp.workCardRemaining))}
+          ${row('📋','بطاقة المصدر — تاريخ الانتهاء', emp.sourceCardExpiry ? formatDate(emp.sourceCardExpiry) : null)}
+          ${row('⏳','المتبقي', emp.sourceCardRemaining !== undefined && emp.sourceCardRemaining !== '' ? emp.sourceCardRemaining + ' يوم' : null, getDaysColor(emp.sourceCardRemaining))}
+
+          <!-- ─── رصيد الإجازات ─── -->
+          ${sep('رصيد الإجازات', '✈️')}
+          <div style="display:flex;gap:10px;margin:8px 0 12px;">
+            <div class="emp-balance-box" style="background:#E8F5E9;flex:1;">
+              <div style="font-size:1.7rem;font-weight:900;color:#2E7D32">${lv.systemRemaining ?? 0}</div>
+              <div style="font-size:.7rem;color:#388E3C;font-weight:600">سنوية متبقية</div>
+              <div style="font-size:.65rem;color:#A5D6A7">من ${lv.systemBalance ?? 0}</div>
+            </div>
+            <div class="emp-balance-box" style="background:#E0F2F1;flex:1;">
+              <div style="font-size:1.5rem;font-weight:800;color:#00897B">${lv.scheduledRemaining ?? 0}</div>
+              <div style="font-size:.7rem;color:#00897B;font-weight:600">مجدولة متبقية</div>
+              <div style="font-size:.65rem;color:#80CBC4">من ${lv.scheduledBalance ?? 0}</div>
+            </div>
           </div>
-          <div class="emp-eq-grid" style="margin-top:12px;">
-            ${[['قميص CAT2', eq.cat2Shirt], ['بنطلون CAT2', eq.cat2Pants],
-               ['سيفتي شوز', eq.safetyShoes], ['بدلة CAT4', eq.cat4Suit],
-               ['برافو', eq.bravo], ['ميجر', eq.major], ['أخرى', eq.otherQty]]
-              .map(([l, v]) => `
+
+          <!-- ─── العدد والمقاسات ─── -->
+          ${sep('العدد والمقاسات', '🔧')}
+          <div class="emp-eq-grid" style="margin-top:8px;">
+            ${[['قميص CAT2',eq.cat2Shirt],['بنطلون CAT2',eq.cat2Pants],
+               ['سيفتي شوز',eq.safetyShoes],['بدلة CAT4',eq.cat4Suit],
+               ['برافو',eq.bravo],['ميجر',eq.major],['أخرى',eq.otherQty]]
+              .map(([l,v]) => `
               <div class="emp-eq-item">
                 <div class="emp-eq-label">${l}</div>
                 <div class="emp-eq-val">${v || '—'}</div>
               </div>`).join('')}
           </div>
-        </div>
 
+        </div>
       </div>`;
   },
 
