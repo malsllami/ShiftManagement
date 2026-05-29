@@ -51,9 +51,9 @@ const Dashboard = {
                              .reduce((s, o) => s + (Number(o.hours) || 0), 0);
 
     const statusInfo = {
-      'صباح': { label: 'دوام صباحي', icon: '🌅', col: '#1565C0' },
+      'صباح': { label: 'دوام صباحي', icon: '☀️', col: '#1565C0' },
       'مساء': { label: 'دوام مسائي', icon: '🌙', col: '#E65100' },
-      'راحة': { label: 'يوم راحة',   icon: '🏠', col: '#6A1B9A' }
+      'راحة': { label: 'يوم راحة',   icon: '🏖️', col: '#6A1B9A' }
     };
     const si = statusInfo[today.status] || { label: '---', icon: '⏳', col: '#999' };
 
@@ -107,9 +107,9 @@ const Dashboard = {
     </div>
 
     <!-- الإجازات -->
-    <div class="emp-card">
+    <div class="emp-card card-interactive" onclick="navigateTo('leaves')">
       <div class="emp-card-hd">
-        <span class="emp-card-icon" style="background:#E8F5E9">🌴</span>
+        <span class="emp-card-icon" style="background:#E8F5E9">✈️</span>
         <div>
           <div class="emp-card-title">إجازاتي</div>
           <div class="emp-card-sub">
@@ -139,15 +139,15 @@ const Dashboard = {
         <span class="emp-status-chip" style="${this._statusStyle(reqs[0].status)}">${reqs[0].status}</span>
       </div>` : ''}
       <button class="emp-action-btn" style="background:#E8F5E9;color:#2E7D32;cursor:pointer;border:none;font-family:var(--font);"
-              onclick="openLeaveRequestModal()">
+              onclick="event.stopPropagation(); openLeaveRequestModal()">
         ➕ طلب إجازة جديد
       </button>
     </div>
 
     <!-- العمل الإضافي -->
-    <div class="emp-card">
+    <div class="emp-card card-interactive" onclick="navigateTo('overtime')">
       <div class="emp-card-hd">
-        <span class="emp-card-icon" style="background:#FFF3E0">⏱️</span>
+        <span class="emp-card-icon" style="background:#FFF3E0">⏰💰</span>
         <div>
           <div class="emp-card-title">عمل إضافي</div>
           <div class="emp-card-sub">
@@ -175,13 +175,13 @@ const Dashboard = {
         <span class="emp-status-chip" style="${this._statusStyle(ots[0].overallStatus)}">${ots[0].overallStatus}</span>
       </div>` : ''}
       <button class="emp-action-btn" style="background:#FFF3E0;color:#E65100;cursor:pointer;border:none;font-family:var(--font);"
-              onclick="openOvertimeFormModal()">
+              onclick="event.stopPropagation(); openOvertimeFormModal()">
         ➕ طلب عمل إضافي
       </button>
     </div>
 
     <!-- العدد والمقاسات -->
-    <div class="emp-card card-interactive" onclick="openEquipmentEditModal('${empId}')">
+    <div class="emp-card card-interactive" onclick="navigateTo('equipment')">
       <div class="emp-card-hd">
         <span class="emp-card-icon" style="background:#E8EAF6">🔧</span>
         <div>
@@ -199,11 +199,11 @@ const Dashboard = {
             <div class="emp-eq-val">${v || '—'}</div>
           </div>`).join('')}
       </div>
-      <div class="emp-action-btn" style="background:#E8EAF6;color:#3949AB">✏️ تعديل</div>
+      <div class="emp-action-btn" style="background:#E8EAF6;color:#3949AB">عرض وتعديل</div>
     </div>
 
     <!-- المنطقة والمركز -->
-    <div class="emp-card card-interactive" onclick="openRegionEditModal('${empId}')">
+    <div class="emp-card card-interactive" onclick="navigateTo('regions')">
       <div class="emp-card-hd">
         <span class="emp-card-icon" style="background:#FCE4EC">📍</span>
         <div>
@@ -216,7 +216,35 @@ const Dashboard = {
         <div class="emp-info-item"><span class="emp-info-key">🏢 المركز</span><strong>${reg?.center || 'غير محدد'}</strong></div>
         <div class="emp-info-item"><span class="emp-info-key">🚗 السيارة</span><strong>${reg?.carNumber || 'غير محدد'}</strong></div>
       </div>
-      <div class="emp-action-btn" style="background:#FCE4EC;color:#C2185B">✏️ تعديل</div>
+      <div class="emp-action-btn" style="background:#FCE4EC;color:#C2185B">عرض المنطقة</div>
+    </div>
+
+    <!-- الإشعارات -->
+    <div class="emp-card card-interactive" onclick="navigateTo('notifications')">
+      <div class="emp-card-hd">
+        <span class="emp-card-icon" style="background:#E3F2FD">🔔</span>
+        <div>
+          <div class="emp-card-title">الإشعارات</div>
+          <div class="emp-card-sub">متابعة حالة الطلبات</div>
+        </div>
+      </div>
+      <div class="emp-action-btn" style="background:#E3F2FD;color:#1565C0;margin-top:16px">
+        عرض الإشعارات
+      </div>
+    </div>
+
+    <!-- العرض الشامل -->
+    <div class="emp-card card-interactive" onclick="navigateTo('overview')">
+      <div class="emp-card-hd">
+        <span class="emp-card-icon" style="background:#E8EAF6">📊</span>
+        <div>
+          <div class="emp-card-title">بياناتي الشاملة</div>
+          <div class="emp-card-sub">كل بياناتك في مكان واحد</div>
+        </div>
+      </div>
+      <div class="emp-action-btn" style="background:#E8EAF6;color:#3949AB;margin-top:16px">
+        عرض البيانات
+      </div>
     </div>
 
     <!-- الإعدادات -->
@@ -250,7 +278,7 @@ const Dashboard = {
     const color    = AppState.shiftColors[shift] || '#1565C0';
     const today    = new Date();
     today.setHours(0,0,0,0);
-    const wd       = ['أح','إث','ثل','أر','خم','جم','سب'];
+    const wd       = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
 
     let html = `<div class="mini-week-wrap">`;
     for (let i = -1; i <= 5; i++) {
@@ -259,7 +287,7 @@ const Dashboard = {
       const day  = ((refPos - 1 + diff) % 8 + 8) % 8 + 1;
       const st   = day <= 2 ? 'صباح' : day <= 4 ? 'مساء' : 'راحة';
       const cls  = { 'صباح': 'mwc-morning', 'مساء': 'mwc-evening', 'راحة': 'mwc-off' }[st];
-      const ico  = { 'صباح': '🌅', 'مساء': '🌙', 'راحة': '🏠' }[st];
+      const ico  = { 'صباح': '☀️', 'مساء': '🌙', 'راحة': '🏖️' }[st];
       const isT  = (i === 0);
 
       html += `
@@ -290,15 +318,44 @@ const Dashboard = {
       html += this._buildShiftCards(statsRes.data, todayRes.success ? todayRes.data : {});
     }
 
+    html += this._buildNavCards(role);
+
     if (role === ROLES.MANAGER && usageRes?.success) {
       html += this._buildUsageCard(usageRes);
     }
 
-    container.innerHTML = html || '<div class="empty-state"><div class="empty-state-icon">🏠</div><div class="empty-state-text">مرحباً</div></div>';
+    container.innerHTML = html || '<div class="empty-state"><div class="empty-state-icon">👋</div><div class="empty-state-text">مرحباً</div></div>';
 
     if (role === ROLES.MANAGER && usageRes?.success) {
       this._animateQuotaBar(usageRes.today?.percentage || 0);
     }
+  },
+
+  _buildNavCards(role) {
+    const items = [
+      { id: 'employees',     icon: '👥', label: 'الموظفون',         color: '#1565C0', show: [ROLES.SUPERVISOR, ROLES.COORDINATOR, ROLES.MANAGER] },
+      { id: 'leaves',        icon: '✈️', label: 'الإجازات',         color: '#2E7D32' },
+      { id: 'overtime',      icon: '⏰💰', label: 'العمل الإضافي', color: '#E65100' },
+      { id: 'overview',      icon: '📊', label: 'العرض الشامل',     color: '#6A1B9A' },
+      { id: 'regions',       icon: '📍', label: 'المناطق والمراكز', color: '#C2185B' },
+      { id: 'equipment',     icon: '🔧', label: 'العدد والمقاسات',  color: '#3949AB' },
+      { id: 'notifications', icon: '🔔', label: 'الإشعارات',        color: '#1565C0' },
+      { id: 'log',           icon: '📋', label: 'السجل',            color: '#6A1B9A', show: [ROLES.COORDINATOR, ROLES.MANAGER] },
+      { id: 'settings',      icon: '⚙️', label: 'الإعدادات',        color: '#006064', show: [ROLES.MANAGER] },
+    ];
+    let html = `<div class="section-title mb-12">📋 التنقل السريع</div><div class="nav-cards-grid mb-24">`;
+    items.forEach(item => {
+      if (item.show && !item.show.includes(role)) return;
+      const c = item.color;
+      html += `
+        <div class="nav-card card-interactive" onclick="navigateTo('${item.id}')"
+             style="border-top:3px solid ${c}">
+          <div style="font-size:1.8rem;margin-bottom:6px;">${item.icon}</div>
+          <div style="font-weight:700;font-size:.85rem;color:var(--text)">${item.label}</div>
+        </div>`;
+    });
+    html += `</div>`;
+    return html;
   },
 
   _buildShiftCards(stats, today) {
@@ -307,7 +364,7 @@ const Dashboard = {
       const s     = stats[shift] || { total:0, employees:0, supervisors:0 };
       const t     = today[shift] || {};
       const color = AppState.shiftColors[shift] || '#1565C0';
-      const si    = { صباح:{l:'دوام صباحي',i:'🌅'}, مساء:{l:'دوام مسائي',i:'🌙'}, راحة:{l:'راحة',i:'🏠'} }[t.status] || {l:'...',i:'⏳'};
+      const si    = { صباح:{l:'دوام صباحي',i:'☀️'}, مساء:{l:'دوام مسائي',i:'🌙'}, راحة:{l:'راحة',i:'🏖️'} }[t.status] || {l:'...',i:'⏳'};
       html += `
         <div class="stat-card card-interactive" data-shift="${shift}" style="border-right:4px solid ${color}">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
