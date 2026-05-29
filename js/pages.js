@@ -297,7 +297,7 @@ const OvertimePage = {
 
     let html = `
       <div class="d-flex items-center gap-12 mb-16" style="flex-wrap:wrap;">
-        <div class="section-title" style="margin-bottom:0;border:none;padding:0;">⏱️ العمل الإضافي</div>
+        <div class="section-title" style="margin-bottom:0;border:none;padding:0;">⏰💰 العمل الإضافي</div>
         <button class="btn btn-primary" onclick="openOvertimeFormModal()">➕ طلب عمل إضافي</button>
         <input type="date" class="form-control" style="max-width:160px;" placeholder="من" id="otFrom">
         <input type="date" class="form-control" style="max-width:160px;" placeholder="إلى" id="otTo">
