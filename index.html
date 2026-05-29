@@ -88,7 +88,7 @@
 
   <!-- Header -->
   <header class="app-header">
-    <div class="header-brand">
+    <div class="header-brand" onclick="if(typeof navigateTo==='function') navigateTo('dashboard')" style="cursor:pointer;">
       <img src="img/logo.png" alt="SE" class="header-logo" onerror="this.style.display='none'">
       <div>
         <div class="header-title">إدارة الورديات</div>
@@ -97,6 +97,7 @@
     </div>
 
     <div class="header-actions">
+      <div id="elevatedBtnWrap" style="display:flex;align-items:center;"></div>
       <button class="theme-toggle" id="themeToggle" onclick="cycleTheme()">☀️ فاتح</button>
 
       <div style="position:relative;">
@@ -635,7 +636,7 @@ async function submitChangePassModal() {
 document.addEventListener('DOMContentLoaded', () => {
   // تطبيق الثيم
   const saved = localStorage.getItem('se_theme') || 'light';
-  const labels = { light: '☀️ فاتح', dark: '🌙 داكن', mixed: '🎨 خليط' };
+  const labels = { light: '☀️ فاتح', dark: '🎨 مختلط', mixed: '🌙 داكن' };
   const themeBtn = document.getElementById('themeToggle');
   if (themeBtn) themeBtn.innerHTML = labels[saved] || '☀️ فاتح';
 });
