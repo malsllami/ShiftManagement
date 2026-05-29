@@ -110,8 +110,12 @@ const CalendarPage = {
 
         <!-- ── رؤوس الأيام ── -->
         <div class="cal-grid-head">
-          <div>أحد</div><div>إثن</div><div>ثلاث</div>
-          <div>أربع</div><div>خمس</div><div>جمع</div><div>سبت</div>
+          ${[['الأحد','أح'],['الاثنين','إث'],['الثلاثاء','ثل'],
+             ['الأربعاء','أر'],['الخميس','خم'],['الجمعة','جم'],['السبت','سب']]
+            .map(([full,short]) => `<div>
+              <span class="cal-wd-full">${full}</span>
+              <span class="cal-wd-short">${short}</span>
+            </div>`).join('')}
         </div>
 
         <!-- ── شبكة الأيام ── -->
@@ -121,6 +125,18 @@ const CalendarPage = {
     for (let i = 0; i < firstDow; i++) {
       html += `<div class="cal-cell cal-cell-empty"></div>`;
     }
+
+    // ألوان خلفية الحالات
+    const STATUS_BG = {
+      'صباح': 'rgba(255,152,0,.18)',
+      'مساء': 'rgba(33,33,220,.15)',
+      'راحة': 'rgba(106,27,154,.13)'
+    };
+    const STATUS_BORDER = {
+      'صباح': 'rgba(255,152,0,.5)',
+      'مساء': 'rgba(63,81,181,.5)',
+      'راحة': 'rgba(106,27,154,.4)'
+    };
 
     // خلايا الأيام
     data.calendar.forEach(day => {
@@ -135,11 +151,13 @@ const CalendarPage = {
         <div class="cal-cell-chips">
           ${SHIFTS.map(s => {
             const status = day.shifts[s] || 'راحة';
-            const color  = AppState.shiftColors[s] || '#1565C0';
+            const shiftColor = AppState.shiftColors[s] || '#1565C0';
             const isMine = s === myShift;
+            const bg     = STATUS_BG[status];
+            const bdr    = STATUS_BORDER[status];
             return `<div class="cal-chip ${isMine ? 'cal-chip-mine' : ''}" data-shift="${s}"
-                        style="border-color:${color};${isMine ? `background:${color}22;` : ''}">
-              <span class="cal-chip-ltr" style="color:${color}">${s}</span>
+                        style="background:${bg};border-color:${bdr};">
+              <span class="cal-chip-ltr" style="color:${shiftColor}">${s}</span>
               <span class="cal-chip-ico">${ICONS[status]}</span>
             </div>`;
           }).join('')}
@@ -178,22 +196,35 @@ const CalendarPage = {
   _buildCompactStats(stats) {
     return `
       <div class="card mt-16">
-        <div style="font-weight:800;margin-bottom:10px;font-size:.9rem;">📊 إحصائيات الشهر</div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;">
-          ${SHIFTS.map(s => {
-            const d = stats[s] || { morning: 0, evening: 0, off: 0 };
-            const c = AppState.shiftColors[s] || '#1565C0';
-            const total = (d.morning || 0) + (d.evening || 0);
-            return `<div style="flex:1;min-width:100px;padding:10px 8px;
-                                border-radius:var(--radius);background:${c}10;
-                                border:1px solid ${c}30;text-align:center;">
-              <div style="font-weight:800;color:${c};font-size:.85rem;margin-bottom:4px;">وردية ${s}</div>
-              <div style="font-size:.7rem;color:var(--text-muted);">
-                ☀️ ${d.morning||0} &nbsp;🌙 ${d.evening||0} &nbsp;🏖️ ${d.off||0}
-              </div>
-              <div style="font-size:.65rem;color:${c};font-weight:700;margin-top:2px;">${total} يوم دوام</div>
-            </div>`;
-          }).join('')}
+        <div style="font-weight:800;margin-bottom:12px;font-size:.95rem;color:var(--text);">
+          📊 إحصائيات الشهر
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>الوردية</th>
+                <th>☀️ صباح</th>
+                <th>🌙 مساء</th>
+                <th>🏖️ راحة</th>
+                <th>إجمالي دوام</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${SHIFTS.map(s => {
+                const d = stats[s] || { morning: 0, evening: 0, off: 0 };
+                const c = AppState.shiftColors[s] || '#1565C0';
+                const total = (d.morning || 0) + (d.evening || 0);
+                return `<tr>
+                  <td><strong style="color:${c}">وردية ${s}</strong></td>
+                  <td>${d.morning || 0}</td>
+                  <td>${d.evening || 0}</td>
+                  <td>${d.off || 0}</td>
+                  <td><strong style="color:${c}">${total} يوم</strong></td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
         </div>
       </div>`;
   },
