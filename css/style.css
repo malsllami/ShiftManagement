@@ -430,26 +430,34 @@ body {
 .user-info {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   cursor: pointer;
-  padding: 6px 12px;
+  padding: 5px 10px 5px 12px;
   border-radius: var(--radius-pill);
   background: rgba(255,255,255,.1);
   border: 1px solid rgba(255,255,255,.2);
   transition: var(--transition);
+  max-width: 220px;
+  min-width: 0;
+  overflow: hidden;
 }
 .user-info:hover { background: rgba(255,255,255,.2); }
+.user-info > div:nth-child(2) { min-width: 0; flex: 1; }
 .user-avatar {
-  width: 34px; height: 34px;
+  width: 32px; height: 32px;
   background: rgba(255,255,255,.25);
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-weight: 700;
   color: #fff;
-  font-size: .9rem;
+  font-size: .85rem;
+  flex-shrink: 0;
 }
-.user-name  { color: #fff; font-size: .875rem; font-weight: 600; }
-.user-role  { color: rgba(255,255,255,.75); font-size: .7rem; }
+.user-name  {
+  color: #fff; font-size: .82rem; font-weight: 700;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.user-role  { color: rgba(255,255,255,.75); font-size: .65rem; white-space: nowrap; }
 
 /* مبدّل الثيم */
 .theme-toggle {
@@ -864,32 +872,45 @@ body {
 .table-wrapper {
   overflow-x: auto;
   border-radius: var(--radius);
-  border: 1px solid var(--border);
+  border: 1.5px solid rgba(21,101,192,.35);
+  box-shadow: 0 2px 12px rgba(21,101,192,.08);
+  -webkit-overflow-scrolling: touch;
 }
 .data-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: .875rem;
+  border: 1.5px solid rgba(21,101,192,.4);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 .data-table th {
-  background: var(--gradient);
+  background: linear-gradient(90deg, #0D47A1 0%, #1565C0 35%, #00ACC1 70%, #26A69A 100%);
   color: #fff;
-  padding: 13px 16px;
-  font-weight: 700;
+  padding: 14px 16px;
+  font-weight: 800;
   text-align: center;
   white-space: nowrap;
   font-size: .875rem;
+  letter-spacing: .02em;
+  text-shadow: 0 1px 2px rgba(0,0,0,.2);
+  border-left: 1px solid rgba(255,255,255,.18);
 }
+.data-table th:last-child { border-left: none; }
 .data-table td {
   padding: 11px 16px;
   text-align: center;
   border-bottom: 1px solid var(--border);
+  border-left: 1px solid var(--border);
   color: var(--text);
   vertical-align: middle;
 }
+.data-table td:last-child  { border-left: none; }
 .data-table tr:last-child td { border-bottom: none; }
 .data-table tbody tr { transition: background .15s; }
-.data-table tbody tr:hover { background: var(--gradient-soft); }
+.data-table tbody tr:nth-child(even) { background: var(--surface2); }
+.data-table tbody tr:hover { background: rgba(21,101,192,.06); }
 
 /* ================================================================
    الأزرار
@@ -1210,144 +1231,125 @@ select.form-control { appearance: none; cursor: pointer; }
    تقويم الورديات - تصميم البطاقات
    ================================================================ */
 
-/* رأس التقويم */
-.cal2-header {
+/* ================================================================
+   التقويم الشبكي المضغوط - Compact Grid Calendar
+   ================================================================ */
+.cal-wrap { max-width: 900px; margin: 0 auto; }
+
+.cal-header {
   display: flex; align-items: center; justify-content: space-between;
-  background: var(--gradient);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  padding: 20px 24px;
-  color: #fff;
-  margin-bottom: 0;
+  padding: 10px 4px; margin-bottom: 8px;
 }
-.cal2-month-title { font-size: 1.35rem; font-weight: 900; }
-.cal2-month-sub   { font-size: .8rem; opacity: .8; margin-top: 3px; }
-.cal2-nav { display: flex; gap: 10px; }
-.cal2-btn-nav {
-  background: rgba(255,255,255,.15);
-  border: 1px solid rgba(255,255,255,.3);
-  color: #fff; border-radius: 10px;
-  padding: 8px 16px; cursor: pointer;
-  font-size: .85rem; font-family: var(--font);
-  transition: var(--transition);
+.cal-header-center { text-align: center; }
+.cal-month-title { font-size: 1.1rem; font-weight: 800; color: var(--text); }
+.cal-hijri-sub   { font-size: .7rem; color: var(--text-muted); margin-top: 1px; }
+.cal-nav-btn {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 50%; width: 36px; height: 36px;
+  font-size: 1.3rem; cursor: pointer; color: var(--primary);
+  display: flex; align-items: center; justify-content: center;
+  transition: var(--transition); font-family: var(--font);
 }
-.cal2-btn-nav:hover { background: rgba(255,255,255,.3); transform: translateY(-1px); }
-.cal2-btn-today {
-  background: #fff; color: var(--primary);
-  border: none; border-radius: 10px;
-  padding: 8px 18px; cursor: pointer;
-  font-size: .875rem; font-weight: 800;
-  font-family: var(--font);
-  transition: var(--transition);
-}
-.cal2-btn-today:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.15); }
+.cal-nav-btn:hover { background: var(--primary); color: #fff; }
 
-/* أسطورة الورديات */
-.cal2-shift-legend {
-  display: flex; align-items: center; gap: 20px;
-  background: var(--surface2);
-  padding: 10px 24px;
-  border-bottom: 1px solid var(--border);
-  flex-wrap: wrap;
+.cal-controls {
+  display: flex; gap: 8px; align-items: center;
+  margin-bottom: 8px; flex-wrap: wrap;
 }
-.cal2-legend-spacer { flex: 1; }
-.cal2-legend-item {
-  font-size: .8rem; font-weight: 700;
-  display: flex; align-items: center;
-}
+.cal-shift-sel { max-width: 160px; font-size: .8rem; }
 
-/* شبكة البطاقات */
-.cal2-grid {
-  display: flex; flex-direction: column; gap: 8px;
-  padding: 16px;
-  background: var(--surface);
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-  border: 1px solid var(--border);
-  border-top: none;
-  max-height: 70vh;
-  overflow-y: auto;
+.cal-legend {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 8px; font-size: .68rem; align-items: center;
+}
+.cal-leg {
+  display: flex; align-items: center; gap: 3px;
+  font-weight: 700;
+}
+.cal-leg span { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.cal-leg-icons { color: var(--text-muted); font-size: .62rem; }
+
+/* رؤوس أيام الأسبوع */
+.cal-grid-head {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 2px; margin-bottom: 2px;
+}
+.cal-grid-head > div {
+  text-align: center; font-size: .6rem; font-weight: 700;
+  color: var(--text-muted); padding: 5px 1px;
+  background: var(--surface2); border-radius: 6px;
 }
 
-/* بطاقة اليوم */
-.cal2-day-card {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 12px 16px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  transition: var(--transition);
-  position: relative;
+/* شبكة الأيام */
+.cal-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
 }
-.cal2-day-card:hover { background: var(--surface); box-shadow: var(--shadow); transform: translateX(-2px); }
-
-/* اليوم الحالي */
-.cal2-today {
+.cal-cell {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 4px 3px;
+  min-height: 80px; transition: var(--transition);
+  overflow: hidden;
+}
+.cal-cell:hover { border-color: var(--primary); background: var(--surface2); }
+.cal-cell-empty { background: transparent !important; border: none !important; }
+.cal-cell-today {
   border: 2px solid var(--primary) !important;
-  background: rgba(21,101,192,.04) !important;
-  box-shadow: 0 0 0 3px rgba(21,101,192,.1);
+  background: rgba(21,101,192,.05) !important;
 }
 @keyframes cal2Flash {
   0%,100% { box-shadow: 0 0 0 3px rgba(21,101,192,.1); }
-  50%      { box-shadow: 0 0 0 8px rgba(21,101,192,.25); }
+  50%      { box-shadow: 0 0 0 8px rgba(21,101,192,.3); }
 }
 .cal2-today-flash { animation: cal2Flash .5s ease 0s 2; }
 
-/* معلومات اليوم */
-.cal2-day-info {
-  display: flex; align-items: center; gap: 12px;
-  min-width: 130px; flex-shrink: 0;
+.cal-cell-top {
+  display: flex; flex-direction: column; align-items: center;
+  margin-bottom: 3px;
 }
-.cal2-day-num {
-  font-size: 1.8rem; font-weight: 900;
-  color: var(--text); line-height: 1;
-  min-width: 44px; text-align: center;
+.cal-day-num {
+  font-size: .9rem; font-weight: 900;
+  color: var(--text); line-height: 1.1;
 }
-.cal2-day-today-num { color: var(--primary); }
-.cal2-day-texts { display: flex; flex-direction: column; gap: 2px; }
-.cal2-day-wd    { font-size: .85rem; font-weight: 700; color: var(--text); }
-.cal2-day-hijri { font-size: .75rem; color: var(--text-muted); }
-.cal2-today-dot {
-  position: absolute;
-  top: 10px; left: 12px;
-  width: 8px; height: 8px;
-  background: var(--primary);
-  border-radius: 50%;
-  animation: pulse 1.5s infinite;
-}
-@keyframes pulse {
-  0%,100% { opacity: 1; transform: scale(1); }
-  50%      { opacity: .5; transform: scale(1.4); }
+.cal-day-today { color: var(--primary); font-size: 1rem; }
+.cal-day-hijri {
+  font-size: .4rem; color: var(--text-muted);
+  text-align: center; line-height: 1;
+  overflow: hidden; max-width: 100%;
+  white-space: nowrap; text-overflow: ellipsis;
+  margin-top: 1px;
 }
 
-/* صف الورديات */
-.cal2-shifts-row {
-  display: flex; gap: 8px; flex: 1; flex-wrap: wrap;
+/* شرائح الوردية */
+.cal-cell-chips { display: flex; flex-direction: column; gap: 2px; }
+.cal-chip {
+  display: flex; align-items: center; justify-content: space-between;
+  border: 1px solid transparent; border-radius: 4px;
+  padding: 1px 3px; font-size: .52rem;
+  transition: opacity .15s;
 }
-.cal2-shift-chip {
-  flex: 1; min-width: 90px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 8px 10px;
-  display: flex; flex-direction: column; gap: 4px;
-  transition: var(--transition);
-}
-.cal2-shift-chip:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
-.cal2-chip-shift  { font-size: .72rem; font-weight: 800; }
-.cal2-chip-status {
-  font-size: .78rem; font-weight: 700;
-  padding: 3px 8px; border-radius: 6px;
-  display: inline-flex; align-items: center; gap: 4px;
-}
+.cal-chip-mine { font-weight: 800; }
+.cal-chip-ltr  { font-weight: 800; font-size: .5rem; }
+.cal-chip-ico  { font-size: .65rem; }
+
+/* إحصائيات الشهر */
+.cal-stats-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .cal2-day-card { flex-direction: column; align-items: flex-start; }
-  .cal2-day-info { min-width: auto; }
-  .cal2-shifts-row { width: 100%; }
-  .cal2-shift-chip  { min-width: 70px; }
-  .cal2-shift-legend { display: none; }
+  .cal-cell { min-height: 68px; padding: 3px 2px; }
+  .cal-day-num { font-size: .8rem; }
+  .cal-chip { padding: 1px 2px; }
+}
+@media (max-width: 480px) {
+  .cal-cell { min-height: 60px; }
+  .cal-day-num { font-size: .72rem; }
+  .cal-grid-head > div { font-size: .5rem; padding: 4px 1px; }
+  .cal-chip { gap: 1px; }
+  .cal-chip-ltr { font-size: .45rem; }
+  .cal-chip-ico { font-size: .58rem; }
+  .cal-legend { display: none; }
+  .cal-hijri-sub { display: none; }
 }
 
 /* ================================================================
@@ -1772,7 +1774,30 @@ select.form-control { appearance: none; cursor: pointer; }
 @media (max-width: 480px) {
   .app-header { padding: 0 10px; height: 54px; }
   .header-title, .header-subtitle { display: none; }
-  .header-logo { height: 30px; }
+  .header-logo { height: 28px; }
+  .header-actions { gap: 6px; }
+
+  /* user-info: أيقونة دائرية فقط بدون نص */
+  .user-info {
+    padding: 4px;
+    max-width: 40px;
+    min-width: 40px;
+    border-radius: 50%;
+    gap: 0;
+    justify-content: center;
+  }
+  .user-info > div:nth-child(2),
+  .user-info > span:last-child { display: none; }
+  .user-avatar { width: 30px; height: 30px; font-size: .8rem; }
+
+  /* إخفاء النص من زر الصلاحية */
+  .elevated-badge { padding: 6px; border-radius: 50%; min-width: 36px; justify-content: center; }
+  .elevated-badge span:last-child { display: none; }
+  .elev-icon { margin: 0; }
+
+  .theme-toggle { display: none; }
+  .notif-btn { width: 34px; height: 34px; }
+
   .emp-cards-grid { grid-template-columns: 1fr; }
   .nav-cards-grid { grid-template-columns: repeat(2, 1fr); }
   .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
@@ -1783,19 +1808,87 @@ select.form-control { appearance: none; cursor: pointer; }
   .emp-card-title { font-size: .875rem; }
   .mwc-cell { min-width: 52px; }
   .mwc-wd { font-size: .48rem; }
-  .user-name { display: none; }
-  .user-role { display: none; }
-  #headerShiftStatus { display: none; }
-  .user-avatar { width: 30px; height: 30px; font-size: .8rem; }
-  .notif-btn { width: 34px; height: 34px; }
-  .theme-toggle { display: none; }
-  .elevated-badge span:last-child { display: none; }
   .section-title { font-size: 1rem; }
   .modal { max-height: 90vh; overflow-y: auto; }
   .login-card { padding: 28px 16px; }
   .data-table { font-size: .78rem; }
   .data-table th, .data-table td { padding: 8px 6px; }
 }
+
+/* ================================================================
+   بطاقة البيانات الشاملة - Overview Card
+   ================================================================ */
+.ov-sep {
+  display: flex; align-items: center; gap: 8px;
+  margin: 14px 0 8px;
+  font-size: .78rem; font-weight: 800; color: var(--primary);
+}
+.ov-sep::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+.ov-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+}
+.ov-row:last-child { border-bottom: none; }
+.ov-key {
+  font-size: .78rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  white-space: nowrap;
+  min-width: 120px;
+}
+.ov-row > span:last-child {
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--text);
+  text-align: left;
+  direction: ltr;
+}
+
+/* ================================================================
+   تقويم الإجازة المصغر - lv-cal
+   ================================================================ */
+.lv-cal-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.lv-cal-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  text-align: center;
+  min-width: 68px;
+  flex: 1 1 68px;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+}
+.lv-cal-card:hover { transform: translateY(-2px); }
+.lv-cal-wd   { font-size: .6rem; color: var(--text-muted); font-weight: 700; margin-bottom: 2px; white-space: nowrap; }
+.lv-cal-num  { font-size: 1.4rem; font-weight: 900; line-height: 1.1; }
+.lv-cal-hijri { font-size: .55rem; color: var(--text-muted); margin: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lv-cal-status {
+  font-size: .6rem; font-weight: 700;
+  border-radius: var(--radius-pill);
+  padding: 2px 6px;
+  margin-top: 4px;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* تكيف الثيمات الداكنة */
+[data-theme="dark"] .lv-cal-status,
+[data-theme="mixed"] .lv-cal-status {
+  filter: brightness(.7) saturate(1.5);
+}
+[data-theme="dark"] .lv-cal-card,
+[data-theme="mixed"] .lv-cal-card { background: var(--surface2); }
 
 /* ── جوال صغير جداً (≤ 360px) ── */
 @media (max-width: 360px) {
