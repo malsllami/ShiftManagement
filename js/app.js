@@ -154,9 +154,9 @@ async function initApp() {
 function navigateTo(page) {
   AppState.currentPage = page;
 
-  // إظهار/إخفاء زر العودة
+  // إظهار/إخفاء زر الرئيسية في الهيدر
   const homeBtn = document.getElementById('homeNavBtn');
-  if (homeBtn) homeBtn.style.display = page === 'dashboard' ? 'none' : 'flex';
+  if (homeBtn) homeBtn.style.display = page === 'dashboard' ? 'none' : 'inline-flex';
 
   // تحديث الـ nav (فارغ)
   document.querySelectorAll('.nav-item').forEach(el => {
