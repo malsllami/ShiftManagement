@@ -46,26 +46,68 @@
   --transition-fast: all .15s ease;
 }
 
-/* ── Dark Theme ── */
+/* ── مختلط (dark = navy dark) ── */
 [data-theme="dark"] {
   --bg:        #0F172A;
   --surface:   #1E293B;
   --surface2:  #263347;
   --border:    #334155;
-  --shadow:    0 4px 24px rgba(0,0,0,.4);
+  --shadow:    0 4px 24px rgba(0,0,0,.5);
+  --shadow-md: 0 8px 32px rgba(0,0,0,.6);
   --text:       #F1F5F9;
   --text-muted: #94A3B8;
   --text-light: #64748B;
   --gradient-soft: linear-gradient(135deg, #1E2A3A 0%, #1A2E35 100%);
 }
 
-/* ── Mixed Theme ── */
+/* ── داكن كامل AMOLED (mixed = full dark) ── */
 [data-theme="mixed"] {
-  --bg:      #E8F5FD;
-  --surface: #FFFFFF;
-  --surface2: #F0FAFF;
-  --border:  #BAE6FD;
+  --bg:        #060A10;
+  --surface:   #0D1117;
+  --surface2:  #131920;
+  --border:    #1E2733;
+  --shadow:    0 4px 32px rgba(0,0,0,.95);
+  --shadow-md: 0 8px 40px rgba(0,0,0,.98);
+  --text:       #E6F0FF;
+  --text-muted: #7A9CBF;
+  --text-light: #3D5A73;
+  --gradient-soft: linear-gradient(135deg, #081018 0%, #0A1520 100%);
+  --success: #4CAF50;
+  --warning: #FF9800;
+  --danger:  #EF5350;
+  --info:    #26C6DA;
 }
+
+/* ── بطاقات الموظف في الداكن الكامل ── */
+[data-theme="mixed"] .mwc-morning { background: #0A1E30 !important; }
+[data-theme="mixed"] .mwc-evening { background: #1A1005 !important; }
+[data-theme="mixed"] .mwc-off     { background: #100615 !important; }
+[data-theme="mixed"] .mwc-wd,
+[data-theme="mixed"] .mwc-st      { color: #5A8AB0 !important; }
+
+[data-theme="mixed"] .emp-balance-box { filter: brightness(.22) saturate(1.8); }
+[data-theme="mixed"] .emp-count-box   { filter: brightness(.22) saturate(1.5); }
+[data-theme="mixed"] .emp-eq-grid     { opacity: .9; }
+
+[data-theme="mixed"] .nav-card    { background: #0D1117; }
+[data-theme="mixed"] .stat-card   { background: #0D1117; }
+[data-theme="mixed"] .emp-card    { background: #0D1117; }
+
+/* أرقام أوضح في الداكن الكامل */
+[data-theme="mixed"] [style*="color:#2E7D32"],
+[data-theme="mixed"] [style*="color:#388E3C"] { color: #66BB6A !important; }
+[data-theme="mixed"] [style*="color:#E65100"],
+[data-theme="mixed"] [style*="color:#BF360C"] { color: #FFA726 !important; }
+[data-theme="mixed"] [style*="color:#1565C0"],
+[data-theme="mixed"] [style*="color:#0D47A1"] { color: #42A5F5 !important; }
+[data-theme="mixed"] [style*="color:#006064"] { color: #26C6DA !important; }
+[data-theme="mixed"] [style*="color:#C62828"] { color: #EF5350 !important; }
+
+/* مختلط - تحسين الأرقام */
+[data-theme="dark"] .emp-balance-box { filter: brightness(.7) saturate(1.3); }
+[data-theme="dark"] .mwc-morning { background: #102030 !important; }
+[data-theme="dark"] .mwc-evening { background: #201508 !important; }
+[data-theme="dark"] .mwc-off     { background: #180D22 !important; }
 
 /* ================================================================
    حقل كلمة المرور مع زر الإظهار/الإخفاء
@@ -618,9 +660,13 @@ body {
 }
 .mini-week-wrap {
   display: flex; gap: 6px; margin-top: 12px;
+  overflow-x: auto; padding-bottom: 6px;
+  scrollbar-width: thin; scrollbar-color: var(--primary) transparent;
 }
+.mini-week-wrap::-webkit-scrollbar { height: 3px; }
+.mini-week-wrap::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 2px; }
 .mwc-cell {
-  flex: 1; border-radius: 10px; padding: 8px 4px;
+  flex: 0 0 auto; min-width: 66px; border-radius: 10px; padding: 8px 4px;
   text-align: center; transition: var(--transition);
 }
 .mwc-cell:hover { transform: translateY(-2px); }
@@ -628,10 +674,10 @@ body {
 .mwc-evening { background: #FFF3E0; }
 .mwc-off     { background: #F3E5F5; }
 .mwc-today   { border: 2px solid var(--primary); }
-.mwc-wd  { font-size: .6rem; color: var(--text-muted); font-weight: 700; }
+.mwc-wd  { font-size: .5rem; color: var(--text-muted); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mwc-num { font-size: .95rem; font-weight: 900; margin: 2px 0; }
-.mwc-ico { font-size: .85rem; }
-.mwc-st  { font-size: .6rem; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+.mwc-ico { font-size: .9rem; }
+.mwc-st  { font-size: .55rem; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
 
 /* ─── شبكة البطاقات الشخصية ─── */
 .emp-cards-grid {
@@ -724,12 +770,6 @@ body {
 /* Responsive */
 @media (max-width: 1100px) {
   .emp-cards-grid { grid-template-columns: repeat(2, 1fr); }
-  .emp-top-row    { grid-template-columns: 1fr; }
-}
-@media (max-width: 640px) {
-  .emp-cards-grid { grid-template-columns: 1fr; }
-  .emp-welcome-card { flex-direction: column; align-items: flex-start; }
-  .mini-week-wrap { gap: 3px; }
 }
 
 /* ── Main Content ── */
@@ -900,13 +940,38 @@ body {
 /* زر الدخول في بطاقة تسجيل الدخول */
 .btn-login.btn-spinning {
   border-radius: 50% !important;
-  width: 48px !important;
-  height: 48px !important;
+  width: 52px !important;
+  height: 52px !important;
   padding: 0 !important;
+  margin: 8px auto 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(255,255,255,.2) !important;
+  border: 2px solid rgba(255,255,255,.5) !important;
+  box-shadow: 0 0 0 6px rgba(255,255,255,.1),
+              0 0 20px rgba(255,255,255,.2) !important;
+  animation: pulseGlow 1.2s ease-in-out infinite !important;
+}
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(255,255,255,.1), 0 0 16px rgba(255,255,255,.15); }
+  50%       { box-shadow: 0 0 0 8px rgba(255,255,255,.18), 0 0 28px rgba(255,255,255,.3); }
 }
 .btn-login.btn-spinning .spin-ring {
   border-color: rgba(255,255,255,.3);
   border-top-color: #fff;
+  width: 24px;
+  height: 24px;
+  border-width: 3px;
+}
+/* أيقونة إظهار المرور - تكييف مع بياض الحقل */
+.login-card .pass-toggle-btn {
+  color: var(--primary) !important;
+  background: rgba(255,255,255,.08);
+}
+.login-card .pass-toggle-btn:hover {
+  color: var(--primary-dark) !important;
+  background: rgba(255,255,255,.2) !important;
 }
 
 .btn-primary {
@@ -1585,4 +1650,155 @@ select.form-control { appearance: none; cursor: pointer; }
   border: none;
   border-top: 1px solid var(--border);
   margin: 20px 0;
+}
+
+/* ================================================================
+   Nav Cards Grid - شبكة بطاقات التنقل
+   ================================================================ */
+.nav-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 12px;
+}
+.nav-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px 10px;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+}
+.nav-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+/* ================================================================
+   زر الدخول - تحسينات
+   ================================================================ */
+.btn-login {
+  position: relative;
+  overflow: hidden;
+}
+.btn-login.loading {
+  border-radius: 50% !important;
+  width: 52px !important;
+  height: 52px !important;
+  padding: 0 !important;
+  min-width: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  transition: all .4s cubic-bezier(.4,0,.2,1);
+}
+.btn-login.loading::after {
+  content: '';
+  position: absolute;
+  width: 24px; height: 24px;
+  border: 3px solid rgba(21,101,192,.3);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* أيقونة العين في صفحة الدخول */
+.login-card .pass-toggle-btn {
+  color: rgba(255,255,255,.8) !important;
+}
+.login-card .pass-toggle-btn:hover {
+  color: #fff !important;
+  background: rgba(255,255,255,.15) !important;
+}
+
+/* ================================================================
+   Header - تحسينات التناسق
+   ================================================================ */
+.header-actions { gap: 8px; }
+.elevated-badge {
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.3);
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  color: #fff;
+  font-size: .78rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: var(--transition);
+  font-family: var(--font);
+  white-space: nowrap;
+}
+.elevated-badge:hover { background: rgba(255,255,255,.25); }
+.elevated-badge.active-elevated {
+  background: rgba(255,255,255,.25);
+  border-color: rgba(255,255,255,.5);
+}
+
+/* ================================================================
+   شاشات متجاوبة - Responsive Design
+   ================================================================ */
+
+/* ── لابتوب / تابلت كبير (≤ 1100px) ── */
+@media (max-width: 1100px) {
+  .nav-cards-grid { grid-template-columns: repeat(auto-fill, minmax(95px, 1fr)); }
+}
+
+/* ── تابلت (≤ 768px) ── */
+@media (max-width: 768px) {
+  .app-main { padding: 12px 10px; }
+  .emp-cards-grid { grid-template-columns: repeat(2, 1fr); }
+  .emp-card { padding: 14px; }
+  .nav-cards-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .nav-card { padding: 12px 8px; }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .mwc-cell { min-width: 60px; padding: 6px 4px; }
+  .section-title { font-size: 1.1rem; }
+  .emp-balance-row { gap: 8px; }
+  .emp-balance-box { padding: 10px 8px; }
+  .table-wrapper { -webkit-overflow-scrolling: touch; }
+  .app-header { padding: 0 12px; }
+  .header-brand { gap: 8px; }
+  .header-title { font-size: .95rem; }
+  .user-name { max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .theme-toggle span:last-child { display: none; }
+}
+
+/* ── جوال (≤ 480px) ── */
+@media (max-width: 480px) {
+  .app-header { padding: 0 10px; height: 54px; }
+  .header-title, .header-subtitle { display: none; }
+  .header-logo { height: 30px; }
+  .emp-cards-grid { grid-template-columns: 1fr; }
+  .nav-cards-grid { grid-template-columns: repeat(2, 1fr); }
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  .app-main { padding: 10px 8px; }
+  .emp-card { padding: 12px; }
+  .emp-card-hd { gap: 10px; }
+  .emp-card-icon { width: 36px; height: 36px; font-size: .9rem; flex-shrink: 0; }
+  .emp-card-title { font-size: .875rem; }
+  .mwc-cell { min-width: 52px; }
+  .mwc-wd { font-size: .48rem; }
+  .user-name { display: none; }
+  .user-role { display: none; }
+  #headerShiftStatus { display: none; }
+  .user-avatar { width: 30px; height: 30px; font-size: .8rem; }
+  .notif-btn { width: 34px; height: 34px; }
+  .theme-toggle { display: none; }
+  .elevated-badge span:last-child { display: none; }
+  .section-title { font-size: 1rem; }
+  .modal { max-height: 90vh; overflow-y: auto; }
+  .login-card { padding: 28px 16px; }
+  .data-table { font-size: .78rem; }
+  .data-table th, .data-table td { padding: 8px 6px; }
+}
+
+/* ── جوال صغير جداً (≤ 360px) ── */
+@media (max-width: 360px) {
+  .emp-cards-grid, .nav-cards-grid { grid-template-columns: 1fr; }
+  .app-header { height: 50px; }
 }
