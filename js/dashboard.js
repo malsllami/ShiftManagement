@@ -94,11 +94,19 @@ const Dashboard = {
         </div>
         <div class="emp-info-item">
           <span class="emp-info-key">🪪 بطاقة العمل</span>
-          <span class="${getDaysColor(emp?.workCardRemaining)}">${emp?.workCardRemaining !== '' && emp?.workCardRemaining !== undefined ? emp.workCardRemaining + ' يوم' : 'غير محدد'}</span>
+          <span>${emp?.workCardExpiry ? formatDate(emp.workCardExpiry) : 'غير محدد'}</span>
+        </div>
+        <div class="emp-info-item">
+          <span class="emp-info-key">⏳ المتبقي</span>
+          <span class="${getDaysColor(emp?.workCardRemaining)}">${emp?.workCardRemaining !== '' && emp?.workCardRemaining !== undefined ? emp.workCardRemaining + ' يوم' : '-'}</span>
         </div>
         <div class="emp-info-item">
           <span class="emp-info-key">📋 بطاقة المصدر</span>
-          <span class="${getDaysColor(emp?.sourceCardRemaining)}">${emp?.sourceCardRemaining !== '' && emp?.sourceCardRemaining !== undefined ? emp.sourceCardRemaining + ' يوم' : 'غير محدد'}</span>
+          <span>${emp?.sourceCardExpiry ? formatDate(emp.sourceCardExpiry) : 'غير محدد'}</span>
+        </div>
+        <div class="emp-info-item">
+          <span class="emp-info-key">⏳ المتبقي</span>
+          <span class="${getDaysColor(emp?.sourceCardRemaining)}">${emp?.sourceCardRemaining !== '' && emp?.sourceCardRemaining !== undefined ? emp.sourceCardRemaining + ' يوم' : '-'}</span>
         </div>
       </div>
       <div class="emp-action-btn" style="background:#EDE7F6;color:#6A1B9A">
@@ -171,7 +179,7 @@ const Dashboard = {
       ${ots.length > 0 ? `
       <div class="emp-last-req">
         <span style="font-size:.75rem;color:var(--text-muted)">آخر طلب:</span>
-        <span style="font-size:.78rem;font-weight:600">${ots[0].hours} ساعة - ${ots[0].date}</span>
+        <span style="font-size:.78rem;font-weight:600">${ots[0].hours} ساعة - ${formatDate(ots[0].date)}</span>
         <span class="emp-status-chip" style="${this._statusStyle(ots[0].overallStatus)}">${ots[0].overallStatus}</span>
       </div>` : ''}
       <button class="emp-action-btn" style="background:#FFF3E0;color:#E65100;cursor:pointer;border:none;font-family:var(--font);"
