@@ -85,6 +85,9 @@ class API {
   static getShiftStats() {
     return this.call('getShiftStats');
   }
+  static repairLinkedRows() {
+    return this.call('repairLinkedRows');
+  }
 
   // ============ المناطق ============
   static getRegions(filters = {}) {
