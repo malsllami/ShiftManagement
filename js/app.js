@@ -127,15 +127,15 @@ async function initApp() {
   showLayout();
   updateUserHeader();
 
-  // جلب الإعدادات
-  const settingsRes = await API.getSettings();
+  // جلب الإعدادات وأنواع الإجازات بالتوازي
+  const [settingsRes, ltRes] = await Promise.all([
+    API.getSettings(),
+    API.getLeaveTypes()
+  ]);
   if (settingsRes.success) {
     AppState.settings = settingsRes.data;
     applyShiftColors();
   }
-
-  // جلب أنواع الإجازات
-  const ltRes = await API.getLeaveTypes();
   if (ltRes.success) AppState.leaveTypes = ltRes.data;
 
   // بناء القائمة العلوية
@@ -144,8 +144,8 @@ async function initApp() {
   // عرض لوحة التحكم
   navigateTo('dashboard');
 
-  // بدء استطلاع الإشعارات
-  startNotificationPolling();
+  // بدء استطلاع الإشعارات بعد تحميل الداشبورد لتقليل التزامن
+  setTimeout(startNotificationPolling, 2000);
 }
 
 // ================================================================
@@ -189,63 +189,31 @@ async function loadPageData(page) {
 }
 
 // ================================================================
-// بناء القائمة حسب الصلاحية
+// بناء القائمة - مخفية، التنقل عبر بطاقات الداشبورد
 // ================================================================
 function buildNavigation() {
-  const nav          = document.getElementById('appNav');
-  const dbRole       = Auth.getRole();
-  const activeRole   = Auth.getActiveRole();
-  const isElevated   = Auth.hasElevatedAccess();
-  nav.innerHTML      = '';
+  const nav = document.getElementById('appNav');
+  if (nav) { nav.innerHTML = ''; nav.style.display = 'none'; }
+  _updateElevatedBtn();
+}
 
-  // كل الصفحات المتاحة
-  const allPages = [
-    { id: 'dashboard',     label: 'الرئيسية',         icon: '🏠', elevated: false, roles: 'all' },
-    { id: 'calendar',      label: 'تقويم الورديات',    icon: '📅', elevated: false, roles: 'all' },
-    { id: 'employees',     label: 'الموظفون',          icon: '👥', elevated: true,  roles: ['مشرف وردية','تنسيق اداري','مدير'] },
-    { id: 'regions',       label: 'المناطق والمراكز',  icon: '📍', elevated: false, roles: 'all' },
-    { id: 'equipment',     label: 'العدد والمقاسات',   icon: '🔧', elevated: false, roles: 'all' },
-    { id: 'leaves',        label: 'الإجازات',          icon: '🌴', elevated: false, roles: 'all' },
-    { id: 'overtime',      label: 'العمل الإضافي',     icon: '⏱️', elevated: false, roles: 'all' },
-    { id: 'overview',      label: 'العرض الشامل',      icon: '📊', elevated: false, roles: 'all' },
-    { id: 'notifications', label: 'الإشعارات',         icon: '🔔', elevated: false, roles: 'all' },
-    { id: 'log',           label: 'السجل',             icon: '📋', elevated: true,  roles: ['تنسيق اداري','مدير'] },
-    { id: 'settings',      label: 'الإعدادات',         icon: '⚙️', elevated: true,  roles: ['مدير'] },
-  ];
-
-  allPages.forEach(p => {
-    // تحقق من الصلاحية
-    if (p.roles !== 'all' && !p.roles.includes(dbRole)) return;
-
-    // الصفحات التي تحتاج صلاحية مرتفعة لا تُظهر إلا بعد إدخال الرمز
-    if (p.elevated && !isElevated) return;
-
-    const el = document.createElement('div');
-    el.className     = 'nav-item';
-    el.dataset.page  = p.id;
-    el.innerHTML     = `<span class="nav-icon">${p.icon}</span><span>${p.label}</span>`;
-    el.addEventListener('click', () => navigateTo(p.id));
-    nav.appendChild(el);
-  });
-
-  // زر الصلاحية المرتفعة (يظهر فقط لمن لديه صلاحية أعلى من موظف)
-  if (dbRole !== ROLES.EMPLOYEE) {
-    const label = dbRole === ROLES.MANAGER ? 'المدير' :
-                  dbRole === ROLES.SUPERVISOR ? 'المشرف' : 'التنسيق';
-    const elevatedBtn = document.createElement('button');
-    elevatedBtn.id        = 'elevatedBtn';
-    elevatedBtn.className = 'elevated-badge' + (isElevated ? ' active-elevated' : '');
-    elevatedBtn.innerHTML = isElevated
-      ? `<span class="elev-icon">🔓</span><span>وضع ${label} | رجوع</span>`
-      : `<span class="elev-icon">🔑</span><span>دخول ${label}</span>`;
-    elevatedBtn.addEventListener('click', openElevatedCodeModal);
-    nav.appendChild(elevatedBtn);
-  }
-
-  // تحديث النشط
-  document.querySelectorAll('.nav-item').forEach(el => {
-    el.classList.toggle('active', el.dataset.page === AppState.currentPage);
-  });
+function _updateElevatedBtn() {
+  const wrap = document.getElementById('elevatedBtnWrap');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const dbRole    = Auth.getRole();
+  const isElevated = Auth.hasElevatedAccess();
+  if (dbRole === ROLES.EMPLOYEE) return;
+  const label = dbRole === ROLES.MANAGER ? 'المدير' :
+                dbRole === ROLES.SUPERVISOR ? 'المشرف' : 'التنسيق';
+  const btn = document.createElement('button');
+  btn.id = 'elevatedBtn';
+  btn.className = 'elevated-badge' + (isElevated ? ' active-elevated' : '');
+  btn.innerHTML = isElevated
+    ? `<span class="elev-icon">🔓</span><span>${label}</span>`
+    : `<span class="elev-icon">🔑</span><span>دخول ${label}</span>`;
+  btn.addEventListener('click', openElevatedCodeModal);
+  wrap.appendChild(btn);
 }
 
 // ================================================================
@@ -253,10 +221,7 @@ function buildNavigation() {
 // ================================================================
 function openElevatedCodeModal() {
   if (Auth.hasElevatedAccess()) {
-    // إلغاء الصلاحية المرتفعة
     Auth.clearElevatedRole();
-    document.getElementById('elevatedBtn').classList.remove('active-elevated');
-    document.getElementById('elevatedBtn').innerHTML = `<span>🔑</span><span>دخول ${getElevatedLabel()}</span>`;
     showToast('تم التبديل إلى وضع الموظف', 'info');
     buildNavigation();
     navigateTo('dashboard');
@@ -419,7 +384,7 @@ function cycleTheme() {
   const next = themes[(themes.indexOf(current) + 1) % themes.length];
   document.documentElement.dataset.theme = next;
   localStorage.setItem('se_theme', next);
-  const labels = { light: '☀️ فاتح', dark: '🌙 داكن', mixed: '🎨 خليط' };
+  const labels = { light: '☀️ فاتح', dark: '🎨 مختلط', mixed: '🌙 داكن' };
   document.getElementById('themeToggle').innerHTML = labels[next];
 }
 
