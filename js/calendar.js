@@ -107,7 +107,7 @@ const CalendarPage = {
             ${SHIFTS.map(s => {
               const status = day.shifts[s] || 'راحة';
               const color  = AppState.shiftColors[s] || '#1565C0';
-              const icons  = { 'صباح': '🌅', 'مساء': '🌙', 'راحة': '🏠' };
+              const icons  = { 'صباح': '☀️', 'مساء': '🌙', 'راحة': '🏖️' };
               const bgs    = { 'صباح': '#E3F2FD', 'مساء': '#FFF3E0', 'راحة': '#F3E5F5' };
               const fgs    = { 'صباح': '#1565C0', 'مساء': '#E65100', 'راحة': '#6A1B9A' };
               return `
