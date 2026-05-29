@@ -561,6 +561,18 @@
 <!-- Toast Container -->
 <div class="toast-container" id="toastContainer"></div>
 
+<!-- زر العودة للرئيسية (يظهر عند الابتعاد عن الداشبورد) -->
+<button id="homeNavBtn" onclick="navigateTo('dashboard')" title="العودة للرئيسية"
+        style="display:none;position:fixed;bottom:24px;left:24px;z-index:150;
+               width:50px;height:50px;border-radius:50%;border:none;cursor:pointer;
+               background:var(--gradient);color:#fff;font-size:1.3rem;
+               box-shadow:0 4px 20px rgba(21,101,192,.4);
+               transition:all .25s cubic-bezier(.4,0,.2,1);"
+        onmouseover="this.style.transform='scale(1.12)'"
+        onmouseout="this.style.transform='scale(1)'">
+  🏠
+</button>
+
 <!-- ================================================================
      Scripts
      ================================================================ -->
